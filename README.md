@@ -1,3 +1,3 @@
-# Shader Synth
+# Oxide
 
 An audiovisual synthesiser built in rust.
