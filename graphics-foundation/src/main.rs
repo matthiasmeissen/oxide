@@ -63,9 +63,12 @@ fn main() {
                 println!("The close button was pressed.");
                 *control_flow = ControlFlow::Exit;
             },
+            Event::WindowEvent { event: WindowEvent::CursorMoved { position: pos, ..}, .. } => {
+                println!("Mouse position is: {:?}", pos);
+            },
             // For all other Event variants we print the to the console
             _ => {
-                println!("Unhandled Event: {:?}", event);
+                //println!("Unhandled Event: {:?}", event);
             }
         }
     });
