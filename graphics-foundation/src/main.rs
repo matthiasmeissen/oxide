@@ -1,12 +1,14 @@
 use winit::{
-    event::*,
-    event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, Window, WindowBuilder},
+    dpi::PhysicalPosition, 
+    event::*, 
+    event_loop::{ControlFlow, EventLoop}, 
+    window::{Fullscreen, Window, WindowBuilder}
 };
 
 struct State {
     window: Window,
     is_fullscreen: bool,
+    mouse_position: (f64, f64),
 }
 
 impl State {
@@ -18,8 +20,41 @@ impl State {
 
         Self { 
             window,
-            is_fullscreen: false 
+            is_fullscreen: false,
+            mouse_position: (0.0, 0.0),
         }
+    }
+
+    fn input(&mut self, event: &KeyboardInput) -> bool {
+        match (event.virtual_keycode, event.state) {
+            (Some(VirtualKeyCode::F), ElementState::Pressed) => {
+                self.toggle_fullscreen();
+                true
+            },
+            (Some(VirtualKeyCode::T), ElementState::Pressed) => {
+                self.window.set_title("Test Title");
+                true
+            },
+            _ => false,
+        }
+    }
+
+    fn toggle_fullscreen(&mut self) {
+        self.is_fullscreen = !self.is_fullscreen;
+
+        if self.is_fullscreen {
+            println!("Entering fullscreen.");
+            self.window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+        } else {
+            println!("Leaving Fullscreen.");
+            self.window.set_fullscreen(None);
+        }
+    }
+
+    fn set_mouse_position(&mut self, pos: &PhysicalPosition<f64>) {
+        self.mouse_position.0 = pos.x;
+        self.mouse_position.1 = pos.y;
+        println!("x: {} y: {}", self.mouse_position.0, self.mouse_position.1);
     }
 }
 
@@ -39,22 +74,10 @@ fn main() {
                     *control_flow = ControlFlow::Exit;
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    println!("Mouse Position is: {:?}", position);
+                    state.set_mouse_position(&position);
                 }
-                // This arm looks for a KeyboardInput Event
                 WindowEvent::KeyboardInput { input, .. } => {
-                    // Here we check if the keycode and the state match our intention and execute some code based on that
-                    if input.virtual_keycode == Some(VirtualKeyCode::F) && input.state == ElementState::Pressed {
-                        state.is_fullscreen = !state.is_fullscreen;
-
-                        if state.is_fullscreen {
-                            println!("Entering fullscreen.");
-                            state.window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                        } else {
-                            println!("Leaving Fullscreen.");
-                            state.window.set_fullscreen(None);
-                        }
-                    }
+                    state.input(&input);
                 }
                 _ => ()
             },
