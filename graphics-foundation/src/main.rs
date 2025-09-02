@@ -1,5 +1,5 @@
 use winit::{
-    dpi::PhysicalSize,
+    dpi::{PhysicalPosition, PhysicalSize},
     event::*,
     event_loop::{self, ControlFlow, EventLoop},
     window::{Fullscreen, Window, WindowBuilder},
@@ -203,6 +203,10 @@ impl State {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present()
     }
+
+    fn get_mouse_position(&self, pos: PhysicalPosition<f64>) {
+        println!("Mouse position is: {:?}", pos);
+    }
 }
 
 const SHADER_CODE: &str = r#"
@@ -256,7 +260,7 @@ fn main() {
                     *control_flow = ControlFlow::Exit;
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    println!("Mouse position is: {:?}", position);
+                    state.get_mouse_position(position);
                 }
                 WindowEvent::Resized(new_size) => {
                     println!("New size is: {:?}", new_size);
