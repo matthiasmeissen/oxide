@@ -4,31 +4,6 @@ use winit::{
     window::WindowBuilder,
 };
 
-const SHADER_CODE: &str = r#"
-    struct VertexOutput {
-        [[builtin(position)]] clip_position: vec4<f32>;
-        [[location(0)]] uv: vec2<f32>;
-    };
-
-    [[stage(vertex)]]
-    fn vs_main([[builtin(vertex_index)]] in_vertex_index: u32) -> VertexOutput {
-        var out: VertexOutput;
-
-        let x = f32(i32(in_vertex_index) % 2) * 2.0 - 1.0;
-        let y = f32(i32(in_vertex_index) / 2) * 2.0 - 1.0;
-        
-        out.clip_position = vec4<f32>(x, -y, 0.0, 1.0);
-        out.uv = vec2<f32>((x + 1.0) / 2.0, (y + 1.0) / 2.0);
-
-        return out;
-    }
-
-    [[stage(fragment)]]
-    fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-        return vec4<f32>(in.uv.x, in.uv.y, 0.5, 1.0);
-    }
-"#;
-
 fn main() {
     env_logger::init();
     let event_loop = EventLoop::new();
@@ -38,8 +13,23 @@ fn main() {
         .build(&event_loop)
         .unwrap();
 
+    // This creates an api for a direct connection to the gpu itself
+    // The Backends::all() variant specifies that we automatically chosse the best one for the system
     let instance = wgpu::Instance::new(wgpu::Backends::all());
+
+    // A surface connects the gpu to a window and gives it an area to draw into
+    // The instance.create_surface(&window) method does just that
+    // The unsafe function tells that we are sure that the window will be available
     let surface = unsafe { instance.create_surface(&window) };
+
+    // The adapter is the handle to a gpu on the system
+    // The instance.request_adapter() is an async function that asks wgpu to find a suitable adapter
+    // The pollster::block_on() waits for the request to complete and gives us the adapter
+
+    // The request_adapter function has some options we need to define
+    // power preference lets us choose the performance of the gpu we need
+    // surface lets us specify that we need the gpu to be able to draw on our surface
+    // fallback lets us specify if we want to fallback to something when the is no gpu available
     let adapter = pollster::block_on(instance.request_adapter(
         &wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -48,6 +38,10 @@ fn main() {
         }
     )).unwrap();
 
+    // device is the logical connection to the gpu, here you can create textures, buffers and pipelines
+    // queue is where you send instructions to the gpu
+    // request_device is an async function the request the device and queue from the adapter
+    // You can specify some details on the device, label for debugging, features you want to have and the limits
     let (device, queue) = pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
             label: None,
@@ -57,44 +51,16 @@ fn main() {
         None,
     )).unwrap();
 
+    // Get window size and store it in variable
     let size = window.inner_size();
+
+    // The configure method tells the surface how to create the underlying textures that will be presented to the window
     surface.configure(&device, &wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT, 
         format: surface.get_preferred_format(&adapter).unwrap(), 
         width: size.width, 
         height: size.height, 
         present_mode: wgpu::PresentMode::Fifo 
-    });
-
-    let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor { 
-            label: Some("Shader"), 
-            source: wgpu::ShaderSource::Wgsl(SHADER_CODE.into())
-        });
-
-    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { 
-        label: Some("Render Pipeline"), 
-        layout: None, 
-        vertex: wgpu::VertexState { 
-            module: &shader, 
-            entry_point: "vs_main", 
-            buffers: &[], 
-        }, 
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleStrip,
-            ..Default::default()
-        }, 
-        depth_stencil: None, 
-        multisample: wgpu::MultisampleState::default(), 
-        fragment: Some(wgpu::FragmentState { 
-            module: &shader, 
-            entry_point: "fs_main", 
-            targets: &[wgpu::ColorTargetState {
-                format: surface.get_preferred_format(&adapter).unwrap(),
-                blend: Some(wgpu::BlendState::REPLACE),
-                write_mask: wgpu::ColorWrites::ALL,
-            }],
-        }), 
-        multiview: None 
     });
 
     event_loop.run(move |event, _, control_flow| {
@@ -116,7 +82,7 @@ fn main() {
                 });
 
                 {
-                    let mut render_pass = encoder.begin_render_pass(
+                    let _render_pass = encoder.begin_render_pass(
                         &wgpu::RenderPassDescriptor { 
                             label: Some("Render Pass"), 
                             color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -129,9 +95,6 @@ fn main() {
                             }], 
                             depth_stencil_attachment: None }
                     );
-
-                    render_pass.set_pipeline(&render_pipeline);
-                    render_pass.draw(0..4, 0..1);
                 }
                 
                 queue.submit(std::iter::once(encoder.finish()));
