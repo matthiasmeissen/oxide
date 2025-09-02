@@ -1,11 +1,7 @@
 use winit::{
-    dpi::PhysicalSize,
-    event::*,
-    event_loop::{self, ControlFlow, EventLoop},
-    window::{Fullscreen, Window, WindowBuilder},
+    dpi::PhysicalSize, event::*, event_loop::{self, ControlFlow, EventLoop}, window::{Fullscreen, Window, WindowBuilder}
 };
 
-use wgpu::util::DeviceExt;
 use wgpu::{Adapter, Device, Instance, Queue, RenderPipeline, ShaderModule, Surface};
 
 struct State {
@@ -19,9 +15,6 @@ struct State {
     queue: Queue,
     shader: ShaderModule,
     render_pipeline: RenderPipeline,
-    time: f32,
-    time_buffer: wgpu::Buffer,
-    time_bind_group: wgpu::BindGroup,
     // custom
     is_fullscreen: bool,
     size: winit::dpi::PhysicalSize<u32>,
@@ -56,42 +49,6 @@ impl State {
         ))
         .unwrap();
 
-        let time_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Time Buffer"),
-            contents: &0.0f32.to_ne_bytes()[..],
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let time_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("time_bind_group_layout"),
-            });
-
-        let time_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &time_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: time_buffer.as_entire_binding(),
-            }],
-            label: Some("time_bind_group"),
-        });
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&time_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(SHADER_CODE.into()),
@@ -99,7 +56,7 @@ impl State {
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
-            layout: Some(&pipeline_layout),
+            layout: None,
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
@@ -134,9 +91,6 @@ impl State {
             queue,
             shader,
             render_pipeline,
-            time: 0.0,
-            time_buffer,
-            time_bind_group,
             is_fullscreen: false,
             size,
             mouse_position: (0.0, 0.0),
@@ -163,18 +117,13 @@ impl State {
     }
 
     fn draw_frame(&mut self) {
-        self.time += 0.01;
-        self.queue.write_buffer(&self.time_buffer, 0, &self.time.to_ne_bytes());
-
         let output = self.surface.get_current_texture().unwrap();
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -183,12 +132,7 @@ impl State {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.2,
-                            g: 0.8,
-                            b: 0.4,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(wgpu::Color {r: 0.2,g: 0.8,b: 0.4,a: 1.0,}),
                         store: true,
                     },
                 }],
@@ -196,7 +140,6 @@ impl State {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.time_bind_group, &[]);
             render_pass.draw(0..4, 0..1);
         }
 
@@ -206,13 +149,6 @@ impl State {
 }
 
 const SHADER_CODE: &str = r#"
-    struct Uniforms {
-        time: f32;
-    };
-
-    [[group(0), binding(0)]]
-    var<uniform> uniforms: Uniforms;
-
     struct VertexOutput {
         [[builtin(position)]] clip_position: vec4<f32>;
         [[location(0)]] uv: vec2<f32>;
@@ -233,9 +169,7 @@ const SHADER_CODE: &str = r#"
 
     [[stage(fragment)]]
     fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-        let r = sin(uniforms.time + in.uv.x);
-        let g = cos(uniforms.time + in.uv.y);
-        return vec4<f32>(r, g, 0.8, 1.0);
+        return vec4<f32>(in.uv.x, in.uv.y, 0.5, 1.0);
     }
 "#;
 
@@ -250,12 +184,12 @@ fn main() {
         *control_flow = ControlFlow::Wait;
 
         match event {
-            Event::WindowEvent { event, .. } => match event {
+            Event::WindowEvent {event,..} => match event {
                 WindowEvent::CloseRequested => {
                     println!("The close button was pressed.");
                     *control_flow = ControlFlow::Exit;
-                }
-                WindowEvent::CursorMoved { position, .. } => {
+                },
+                WindowEvent::CursorMoved { position, ..} => {
                     println!("Mouse position is: {:?}", position);
                 }
                 WindowEvent::Resized(new_size) => {
@@ -263,8 +197,9 @@ fn main() {
                     state.configure_surface();
                 }
                 _ => (),
-            },
+            }
             Event::RedrawRequested(_) => {
+                println!("Redraw the frame.");
                 state.draw_frame();
             }
             Event::MainEventsCleared => {
