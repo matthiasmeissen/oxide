@@ -9,15 +9,6 @@ use wgpu::util::DeviceExt;
 use wgpu::{Adapter, Device, Instance, Queue, RenderPipeline, ShaderModule, Surface};
 
 use std::time::Instant;
-use bytemuck::{Pod, Zeroable};
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Pod, Zeroable)]
-struct Uniforms {
-    time: f32,
-    _padding: u32,
-    mouse: [f32; 2],
-}
 
 struct Fps {
     val: u32,
@@ -54,15 +45,13 @@ struct State {
     shader: ShaderModule,
     render_pipeline: RenderPipeline,
     start_time: Instant,
-    // uniforms
-    uniforms: Uniforms,
-    uniform_buffer: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
+    time_buffer: wgpu::Buffer,
+    time_bind_group: wgpu::BindGroup,
     fps: Fps,
     // custom
     is_fullscreen: bool,
     size: winit::dpi::PhysicalSize<u32>,
-    mouse_position: [f32; 2],
+    mouse_position: (f64, f64),
 }
 
 impl State {
@@ -93,19 +82,13 @@ impl State {
         ))
         .unwrap();
 
-        let uniforms = Uniforms {
-            time: 0.0,
-            _padding: 0,
-            mouse: [0.0, 0.0],
-        };
-
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: bytemuck::cast_slice(&[uniforms]),
+        let time_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Time Buffer"),
+            contents: &0.0f32.to_ne_bytes()[..],
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let uniform_bind_group_layout =
+        let time_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -117,21 +100,21 @@ impl State {
                     },
                     count: None,
                 }],
-                label: Some("uniform_bind_group_layout"),
+                label: Some("time_bind_group_layout"),
             });
 
-        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &uniform_bind_group_layout,
+        let time_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &time_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
+                resource: time_buffer.as_entire_binding(),
             }],
-            label: Some("uniform_bind_group"),
+            label: Some("time_bind_group"),
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout],
+            bind_group_layouts: &[&time_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -178,13 +161,12 @@ impl State {
             shader,
             render_pipeline,
             start_time: Instant::now(),
-            uniforms,
-            uniform_buffer,
-            uniform_bind_group,
+            time_buffer,
+            time_bind_group,
             fps: Fps::new(),
             is_fullscreen: false,
             size,
-            mouse_position: [0.0, 0.0],
+            mouse_position: (0.0, 0.0),
         }
     }
 
@@ -209,15 +191,11 @@ impl State {
 
     fn draw_frame(&mut self) {
         let time = self.start_time.elapsed().as_secs_f32();
-        
+        self.queue.write_buffer(&self.time_buffer, 0, &time.to_ne_bytes());
+
         if (self.fps.update()) {
             println!("Fps: {}", self.fps.val);
         };
-        
-        self.uniforms.time = self.start_time.elapsed().as_secs_f32();
-        self.uniforms.mouse = self.mouse_position;
-        
-        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.uniforms]));
 
         self.set_stats_in_window_title();
 
@@ -251,7 +229,7 @@ impl State {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.time_bind_group, &[]);
             render_pass.draw(0..4, 0..1);
         }
 
@@ -260,15 +238,15 @@ impl State {
     }
 
     fn get_mouse_position(&mut self, pos: PhysicalPosition<f64>) {
-        self.mouse_position[0] = pos.x as f32;
-        self.mouse_position[0] = pos.y as f32;
+        self.mouse_position.0 = pos.x;
+        self.mouse_position.1 = pos.y;
         println!("Mouse position is: {:?}", pos);
     }
 
     fn set_stats_in_window_title(&self) {
         let title = format!(
             "Window Title (Fps: {}, Time: {:.2}, Mouse: {:.2}, {:.2})", 
-            self.fps.val, self.start_time.elapsed().as_secs_f32(), self.mouse_position[0], self.mouse_position[1]
+            self.fps.val, self.start_time.elapsed().as_secs_f32(), self.mouse_position.0, self.mouse_position.1
         );
         self.window.set_title(&title);
     }
@@ -277,7 +255,6 @@ impl State {
 const SHADER_CODE: &str = r#"
     struct Uniforms {
         time: f32;
-        mouse: vec2<f32>;
     };
 
     [[group(0), binding(0)]]
@@ -305,8 +282,7 @@ const SHADER_CODE: &str = r#"
     fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
         let r = sin(uniforms.time + in.uv.x);
         let g = cos(uniforms.time + in.uv.y);
-        let b = uniforms.mouse.x;
-        return vec4<f32>(r, g, b, 1.0);
+        return vec4<f32>(r, g, 0.8, 1.0);
     }
 "#;
 
@@ -327,9 +303,7 @@ fn main() {
                     *control_flow = ControlFlow::Exit;
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    state.mouse_position[0] = position.x as f32 / state.size.width as f32;
-                    state.mouse_position[1] = position.y as f32 / state.size.height as f32;
-                    //state.get_mouse_position(position);
+                    state.get_mouse_position(position);
                 }
                 WindowEvent::Resized(new_size) => {
                     println!("New size is: {:?}", new_size);
