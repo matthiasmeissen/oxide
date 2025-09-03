@@ -15,7 +15,7 @@ use bytemuck::{Pod, Zeroable};
 #[derive(Debug, Copy, Clone, Pod, Zeroable)]
 struct Uniforms {
     time: f32,
-    key1: f32,
+    _padding: u32,
     mouse: [f32; 2],
 }
 
@@ -95,7 +95,7 @@ impl State {
 
         let uniforms = Uniforms {
             time: 0.0,
-            key1: 0.0,
+            _padding: 0,
             mouse: [0.0, 0.0],
         };
 
@@ -265,32 +265,6 @@ impl State {
         println!("Mouse position is: {:?}", pos);
     }
 
-    fn input(&mut self, event: &KeyboardInput) -> bool {
-        match (event.virtual_keycode, event.state) {
-            (Some(VirtualKeyCode::F), ElementState::Pressed) => {
-                self.window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                true
-            },
-            (Some(VirtualKeyCode::T), ElementState::Pressed) => {
-                self.window.set_title("Test Title");
-                true
-            },
-            (Some(VirtualKeyCode::D), ElementState::Pressed) => {
-                self.window.set_decorations(false);
-                true
-            },
-            (Some(VirtualKeyCode::Key1), ElementState::Pressed) => {
-                self.uniforms.key1 = 1.0;
-                true
-            },
-            (Some(VirtualKeyCode::Key1), ElementState::Released) => {
-                self.uniforms.key1 = 0.0;
-                true
-            },
-            _ => false,
-        }
-    }
-
     fn set_stats_in_window_title(&self) {
         let title = format!(
             "Window Title (Fps: {}, Time: {:.2}, Mouse: {:.2}, {:.2})", 
@@ -303,7 +277,6 @@ impl State {
 const SHADER_CODE: &str = r#"
     struct Uniforms {
         time: f32;
-        key1: f32;
         mouse: vec2<f32>;
     };
 
@@ -330,17 +303,10 @@ const SHADER_CODE: &str = r#"
 
     [[stage(fragment)]]
     fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-        let uv = in.uv;
-
-        let r = sin(uniforms.time + uv.x);
-        let g = cos(uniforms.time + uv.y);
+        let r = sin(uniforms.time + in.uv.x);
+        let g = cos(uniforms.time + in.uv.y);
         let b = uniforms.mouse.x;
-
-        let d = mix(step(0.2, uv.x), step(0.2, uv.y), uniforms.key1);
-
-        let col = vec3<f32>(r, g, b) * d;
-
-        return vec4<f32>(col.rgb, 1.0);
+        return vec4<f32>(r, g, b, 1.0);
     }
 "#;
 
@@ -364,9 +330,6 @@ fn main() {
                     state.mouse_position[0] = position.x as f32 / state.size.width as f32;
                     state.mouse_position[1] = position.y as f32 / state.size.height as f32;
                     //state.get_mouse_position(position);
-                }
-                WindowEvent::KeyboardInput { input, .. } => {
-                    state.input(&input);
                 }
                 WindowEvent::Resized(new_size) => {
                     println!("New size is: {:?}", new_size);
