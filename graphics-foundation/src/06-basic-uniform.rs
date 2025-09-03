@@ -8,8 +8,6 @@ use winit::{
 use wgpu::util::DeviceExt;
 use wgpu::{Adapter, Device, Instance, Queue, RenderPipeline, ShaderModule, Surface};
 
-use std::time::Instant;
-
 struct State {
     // winit
     window: Window,
@@ -21,7 +19,7 @@ struct State {
     queue: Queue,
     shader: ShaderModule,
     render_pipeline: RenderPipeline,
-    start_time: Instant,
+    time: f32,
     time_buffer: wgpu::Buffer,
     time_bind_group: wgpu::BindGroup,
     // custom
@@ -136,7 +134,7 @@ impl State {
             queue,
             shader,
             render_pipeline,
-            start_time: Instant::now(),
+            time: 0.0,
             time_buffer,
             time_bind_group,
             is_fullscreen: false,
@@ -165,10 +163,8 @@ impl State {
     }
 
     fn draw_frame(&mut self) {
-
-        let time = self.start_time.elapsed().as_secs_f32();
-
-        self.queue.write_buffer(&self.time_buffer, 0, &time.to_ne_bytes());
+        self.time += 0.01;
+        self.queue.write_buffer(&self.time_buffer, 0, &self.time.to_ne_bytes());
 
         let output = self.surface.get_current_texture().unwrap();
         let view = output
