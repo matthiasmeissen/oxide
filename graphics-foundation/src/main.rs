@@ -10,6 +10,29 @@ use wgpu::{Adapter, Device, Instance, Queue, RenderPipeline, ShaderModule, Surfa
 
 use std::time::Instant;
 
+struct Fps {
+    val: u32,
+    frame_count: u32,
+    last_update: Instant,
+}
+
+impl Fps {
+    fn new() -> Self {
+        Self { val: 0, frame_count: 0, last_update: Instant::now() }
+    }
+
+    fn update(&mut self) -> bool {
+        self.frame_count += 1;
+        if self.last_update.elapsed().as_secs_f32() >= 1.0 {
+            self.val = self.frame_count;
+            self.frame_count = 0;
+            self.last_update = Instant::now();
+            return true;
+        }
+        false
+    }
+}
+
 struct State {
     // winit
     window: Window,
@@ -24,6 +47,7 @@ struct State {
     start_time: Instant,
     time_buffer: wgpu::Buffer,
     time_bind_group: wgpu::BindGroup,
+    fps: Fps,
     // custom
     is_fullscreen: bool,
     size: winit::dpi::PhysicalSize<u32>,
@@ -139,6 +163,7 @@ impl State {
             start_time: Instant::now(),
             time_buffer,
             time_bind_group,
+            fps: Fps::new(),
             is_fullscreen: false,
             size,
             mouse_position: (0.0, 0.0),
@@ -165,10 +190,14 @@ impl State {
     }
 
     fn draw_frame(&mut self) {
-
         let time = self.start_time.elapsed().as_secs_f32();
-
         self.queue.write_buffer(&self.time_buffer, 0, &time.to_ne_bytes());
+
+        if (self.fps.update()) {
+            println!("Fps: {}", self.fps.val);
+        };
+
+        self.set_stats_in_window_title();
 
         let output = self.surface.get_current_texture().unwrap();
         let view = output
@@ -208,8 +237,18 @@ impl State {
         output.present()
     }
 
-    fn get_mouse_position(&self, pos: PhysicalPosition<f64>) {
+    fn get_mouse_position(&mut self, pos: PhysicalPosition<f64>) {
+        self.mouse_position.0 = pos.x;
+        self.mouse_position.1 = pos.y;
         println!("Mouse position is: {:?}", pos);
+    }
+
+    fn set_stats_in_window_title(&self) {
+        let title = format!(
+            "Window Title (Fps: {}, Time: {:.2}, Mouse: {:.2}, {:.2})", 
+            self.fps.val, self.start_time.elapsed().as_secs_f32(), self.mouse_position.0, self.mouse_position.1
+        );
+        self.window.set_title(&title);
     }
 }
 
