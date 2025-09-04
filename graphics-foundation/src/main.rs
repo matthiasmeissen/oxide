@@ -139,6 +139,7 @@ impl State {
         let shader_sources = [
             ("Shader 1", include_str!("shader-01.wgsl")),
             ("Shader 2", include_str!("shader-02.wgsl")),
+            ("Shader 3", include_str!("shader-03.wgsl")),
         ];
 
         let mut render_pipelines = Vec::new();
@@ -190,7 +191,7 @@ impl State {
             device,
             queue,
             render_pipelines,
-            current_pipeline_index: 0,
+            current_pipeline_index: 2,
             start_time: Instant::now(),
             uniforms,
             uniform_buffer,
