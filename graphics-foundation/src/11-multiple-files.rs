@@ -180,6 +180,7 @@ impl State {
         }
 
 
+
         let size = window.inner_size();
 
         Self {
@@ -206,26 +207,8 @@ impl State {
         self.size = self.window.inner_size();
     }
 
-    fn toggle_fullscreen(&mut self) {
-        self.is_fullscreen = !self.is_fullscreen;
-
-        if self.is_fullscreen {
-            self.window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-        } else {
-            self.window.set_fullscreen(None);
-        }
-    }
-
-    fn print_stats(&self) {
-        println!("Fps:      {}", self.fps.val);
-        println!("Mouse:    {}, {}", self.mouse_position[0], self.mouse_position[1]);
-        println!("Size:     {}, {}", self.size.width, self.size.height);
-        println!("Time:     {}", self.start_time.elapsed().as_secs_f32());
-        println!("Shader:   {}", self.current_pipeline_index);
-        println!("--------");
-    }
-
     fn configure_surface(&mut self) {
+        println!("Configure size: {:?}", self.size);
         self.set_size();
         self.surface.configure(
             &self.device,
@@ -239,9 +222,11 @@ impl State {
         );
     }
 
-    fn draw_frame(&mut self) {        
+    fn draw_frame(&mut self) {
+        let time = self.start_time.elapsed().as_secs_f32();
+        
         if (self.fps.update()) {
-            self.print_stats();
+            println!("Fps: {}", self.fps.val);
         };
         
         self.uniforms.time = self.start_time.elapsed().as_secs_f32();
@@ -289,10 +274,16 @@ impl State {
         output.present()
     }
 
+    fn get_mouse_position(&mut self, pos: PhysicalPosition<f64>) {
+        self.mouse_position[0] = pos.x as f32;
+        self.mouse_position[0] = pos.y as f32;
+        println!("Mouse position is: {:?}", pos);
+    }
+
     fn input(&mut self, event: &KeyboardInput) -> bool {
         match (event.virtual_keycode, event.state) {
             (Some(VirtualKeyCode::F), ElementState::Pressed) => {
-                self.toggle_fullscreen();
+                self.window.set_fullscreen(Some(Fullscreen::Borderless(None)));
                 true
             },
             (Some(VirtualKeyCode::T), ElementState::Pressed) => {
@@ -347,11 +338,13 @@ fn main() {
                 WindowEvent::CursorMoved { position, .. } => {
                     state.mouse_position[0] = position.x as f32 / state.size.width as f32;
                     state.mouse_position[1] = position.y as f32 / state.size.height as f32;
+                    //state.get_mouse_position(position);
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
                     state.input(&input);
                 }
                 WindowEvent::Resized(new_size) => {
+                    println!("New size is: {:?}", new_size);
                     state.configure_surface();
                 }
                 _ => (),
