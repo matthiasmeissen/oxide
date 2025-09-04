@@ -51,16 +51,15 @@ struct State {
     adapter: Adapter,
     device: Device,
     queue: Queue,
-    // shaders
-    render_pipelines: Vec<RenderPipeline>,
-    current_pipeline_index: usize,
+    shader: ShaderModule,
+    render_pipeline: RenderPipeline,
+    start_time: Instant,
     // uniforms
     uniforms: Uniforms,
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
-    // custom
-    start_time: Instant,
     fps: Fps,
+    // custom
     is_fullscreen: bool,
     size: winit::dpi::PhysicalSize<u32>,
     mouse_position: [f32; 2],
@@ -136,49 +135,36 @@ impl State {
             push_constant_ranges: &[],
         });
 
-        let shader_sources = [
-            ("Shader 1", include_str!("shader-01.wgsl")),
-            ("Shader 2", include_str!("shader-02.wgsl")),
-        ];
+        let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            label: Some("Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader-01.wgsl").into()),
+        });
 
-        let mut render_pipelines = Vec::new();
-
-        for (label, source) in shader_sources.iter() {
-            let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-                label: Some(label),
-                source: wgpu::ShaderSource::Wgsl((*source).into()),
-            });
-
-            let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some(label),
-                layout: Some(&pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader,
-                    entry_point: "vs_main",
-                    buffers: &[],
-                },
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleStrip,
-                    ..Default::default()
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: "fs_main",
-                    targets: &[wgpu::ColorTargetState {
-                        format: surface.get_preferred_format(&adapter).unwrap(),
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    }],
-                }),
-                multiview: None,
-            });
-
-            render_pipelines.push(render_pipeline);
-        }
-
-
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "vs_main",
+                buffers: &[],
+            },
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "fs_main",
+                targets: &[wgpu::ColorTargetState {
+                    format: surface.get_preferred_format(&adapter).unwrap(),
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                }],
+            }),
+            multiview: None,
+        });
 
         let size = window.inner_size();
 
@@ -189,8 +175,8 @@ impl State {
             adapter,
             device,
             queue,
-            render_pipelines,
-            current_pipeline_index: 0,
+            shader,
+            render_pipeline,
             start_time: Instant::now(),
             uniforms,
             uniform_buffer,
@@ -264,7 +250,7 @@ impl State {
                 depth_stencil_attachment: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipelines[self.current_pipeline_index]);
+            render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             render_pass.draw(0..4, 0..1);
         }
@@ -299,10 +285,6 @@ impl State {
             },
             (Some(VirtualKeyCode::Key1), ElementState::Released) => {
                 self.uniforms.key1 = 0.0;
-                true
-            },
-            (Some(VirtualKeyCode::Key2), ElementState::Pressed) => {
-                self.current_pipeline_index = (self.current_pipeline_index + 1) % self.render_pipelines.len();
                 true
             },
             _ => false,
