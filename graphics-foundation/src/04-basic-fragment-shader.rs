@@ -1,0 +1,145 @@
+use winit::{
+    event::*,
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+
+const SHADER_CODE: &str = r#"
+    struct VertexOutput {
+        [[builtin(position)]] clip_position: vec4<f32>;
+        [[location(0)]] uv: vec2<f32>;
+    };
+
+    [[stage(vertex)]]
+    fn vs_main([[builtin(vertex_index)]] in_vertex_index: u32) -> VertexOutput {
+        var out: VertexOutput;
+
+        let x = f32(i32(in_vertex_index) % 2) * 2.0 - 1.0;
+        let y = f32(i32(in_vertex_index) / 2) * 2.0 - 1.0;
+        
+        out.clip_position = vec4<f32>(x, -y, 0.0, 1.0);
+        out.uv = vec2<f32>((x + 1.0) / 2.0, (y + 1.0) / 2.0);
+
+        return out;
+    }
+
+    [[stage(fragment)]]
+    fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+        return vec4<f32>(in.uv.x, in.uv.y, 0.5, 1.0);
+    }
+"#;
+
+fn main() {
+    env_logger::init();
+    let event_loop = EventLoop::new();
+
+    let window = WindowBuilder::new()
+        .with_title("Window Title")
+        .build(&event_loop)
+        .unwrap();
+
+    let instance = wgpu::Instance::new(wgpu::Backends::all());
+    let surface = unsafe { instance.create_surface(&window) };
+    let adapter = pollster::block_on(instance.request_adapter(
+        &wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }
+    )).unwrap();
+
+    let (device, queue) = pollster::block_on(adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            label: None,
+            features: wgpu::Features::empty(),
+            limits: wgpu::Limits::default(),
+        },
+        None,
+    )).unwrap();
+
+    let size = window.inner_size();
+    surface.configure(&device, &wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT, 
+        format: surface.get_preferred_format(&adapter).unwrap(), 
+        width: size.width, 
+        height: size.height, 
+        present_mode: wgpu::PresentMode::Fifo 
+    });
+
+    let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor { 
+            label: Some("Shader"), 
+            source: wgpu::ShaderSource::Wgsl(SHADER_CODE.into())
+        });
+
+    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { 
+        label: Some("Render Pipeline"), 
+        layout: None, 
+        vertex: wgpu::VertexState { 
+            module: &shader, 
+            entry_point: "vs_main", 
+            buffers: &[], 
+        }, 
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleStrip,
+            ..Default::default()
+        }, 
+        depth_stencil: None, 
+        multisample: wgpu::MultisampleState::default(), 
+        fragment: Some(wgpu::FragmentState { 
+            module: &shader, 
+            entry_point: "fs_main", 
+            targets: &[wgpu::ColorTargetState {
+                format: surface.get_preferred_format(&adapter).unwrap(),
+                blend: Some(wgpu::BlendState::REPLACE),
+                write_mask: wgpu::ColorWrites::ALL,
+            }],
+        }), 
+        multiview: None 
+    });
+
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
+
+        match event {
+            Event::WindowEvent { event: WindowEvent::CloseRequested, ..} => {
+                println!("The close button was pressed.");
+                *control_flow = ControlFlow::Exit;
+            },
+            Event::WindowEvent { event: WindowEvent::CursorMoved { position: pos, ..}, .. } => {
+                println!("Mouse position is: {:?}", pos);
+            },
+            Event::RedrawRequested(_) => {
+                let output = surface.get_current_texture().unwrap();
+                let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
+
+                {
+                    let mut render_pass = encoder.begin_render_pass(
+                        &wgpu::RenderPassDescriptor { 
+                            label: Some("Render Pass"), 
+                            color_attachments: &[wgpu::RenderPassColorAttachment {
+                                view: &view,
+                                resolve_target: None,
+                                ops: wgpu::Operations { 
+                                    load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.2, g: 0.8, b: 0.4, a: 1.0 }), 
+                                    store: true 
+                                },
+                            }], 
+                            depth_stencil_attachment: None }
+                    );
+
+                    render_pass.set_pipeline(&render_pipeline);
+                    render_pass.draw(0..4, 0..1);
+                }
+                
+                queue.submit(std::iter::once(encoder.finish()));
+                output.present();
+            }
+            _ => {
+                //println!("Unhandled Event: {:?}", event);
+            }
+        }
+    });
+}
