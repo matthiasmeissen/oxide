@@ -1,4 +1,4 @@
-use crate::AudioState; // We need access to the shared AudioState struct
+use crate::SharedState; // We need access to the shared AudioState struct
 use std::sync::{Arc, Mutex};
 use winit::{
     event::{Event, WindowEvent, ElementState},
@@ -12,13 +12,13 @@ use winit::{
 pub struct UserInterface {
     event_loop: EventLoop<()>,
     window: Window,
-    audio_state: Arc<Mutex<AudioState>>,
+    shared_state: Arc<Mutex<SharedState>>,
 }
 
 impl UserInterface {
     // The `new` function will set up everything winit needs.
     // It takes the shared audio_state as an argument.
-    pub fn new(audio_state: Arc<Mutex<AudioState>>) -> Self {
+    pub fn new(shared_state: Arc<Mutex<SharedState>>) -> Self {
         let event_loop = EventLoop::new().expect("Failed to create event loop");
         let window = WindowBuilder::new()
             .with_title("Mouse-Controlled Synthesizer")
@@ -29,7 +29,7 @@ impl UserInterface {
         Self {
             event_loop,
             window,
-            audio_state,
+            shared_state,
         }
     }
 
@@ -61,7 +61,7 @@ impl UserInterface {
                         current_frequency = frequency;
                         current_amplitude = amplitude;
 
-                        if let Ok(mut state) = self.audio_state.lock() {
+                        if let Ok(mut state) = self.shared_state.lock() {
                             state.frequency = frequency;
                             state.amplitude = amplitude;
                         }
@@ -70,7 +70,7 @@ impl UserInterface {
                         self.window.set_title(&format!(
                             "Synthesizer - Freq: {:.1}Hz, Amp: {:.2}, Wave: {:?}",
                             frequency, amplitude,
-                            self.audio_state.lock().map(|s| s.waveform).unwrap_or_default()
+                            self.shared_state.lock().map(|s| s.waveform).unwrap_or_default()
                         ));
                     },
                     WindowEvent::KeyboardInput { event, .. } => {
@@ -87,7 +87,7 @@ impl UserInterface {
                             };
                             
                             if let Some(waveform) = new_waveform {
-                                if let Ok(mut state) = self.audio_state.lock() {
+                                if let Ok(mut state) = self.shared_state.lock() {
                                     state.waveform = waveform;
                                 }
                                 println!("Switched to {:?} wave", waveform);
