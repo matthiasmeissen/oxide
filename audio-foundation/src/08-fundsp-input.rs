@@ -23,11 +23,7 @@ fn main() {
     let channels = stream_config.channels as usize;
 
     let env = var(&trigger) >> adsr_live(0.01, 0.0, 1.0, 0.2);
-    let osc1 = var(&pitch) >> sine();
-    let osc2 = var(&pitch) >> saw();
-    let osc = (osc1 + osc2) * 0.5;
-    let filter = osc >> lowrez_hz(800.0, 1.0);
-    let synth= filter * env * var(&gain);
+    let synth= var(&pitch) >> sine() * env * var(&gain);
 
     let mut node = synth * 0.2;
     node.set_sample_rate(sample_rate);
