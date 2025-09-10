@@ -18,41 +18,36 @@ fn main() {
     let sample_rate = stream_config.sample_rate.0 as f64;
     let channels = stream_config.channels as usize;
 
+    // The simplest graph is a single generator
+    // Generators are nodes that have outputs but no inputs
+    let sine = sine_hz(440.0);
+    // You can create a stereo signal with the stack | operator
+    let stereo_noise = noise() | noise();
 
-    // AMPLITUDE MODULATION
-    let carrier = sine_hz(440.0);
-    // The lfo is a closure that takes time as an input
-    let amplitude_lfo = lfo(|t| {
-        // This creates a sin based on t in the range of -1 to 1
-        let lfo_wave = sin_hz(8.0, t);
-        // This maps a range from -1 to 1 into a new lower and upper values
-        lerp11(0.1, 0.8, lfo_wave)
-    });
-    let synth = carrier * amplitude_lfo;
+    // The most common action is changing notes together
+    // The pipe >> operator takes output of node A and connects it to input of node B
+    let lowpass_synth = saw_hz(440.0) >> lowpass_hz(200.0, 1.0);
 
+    // You can combine nodes with the stack | operator
+    // This lets you create stereo signals or provide multiple parameters to nodes
+    let stereo_osc = saw_hz(240.0) | saw_hz(320.0);
+    let stereo_filter = lowpass_hz(200.0, 1.0) | lowpass_hz(300.0, 1.0);
+    let stereo_synth = stereo_osc >> stereo_filter;
 
-    // FREQUENCY MODULATION
-    let base_freq = 440.0;
-    // You need to use the move keyword with the closure to ensure that the base_freq is passed into it
-    let pitch_lfo = lfo(move |t| {
-        let lfo_wave = sin_hz(4.0, t);
-        base_freq + 8.0 * lfo_wave
-    });
-    // The sine() function has an input for the frequency
-    let synth = pitch_lfo >> sine();
+    // You can modulate an mix signals with the * and + operator
+    let carrier = saw_hz(440.0);
+    let modulator = sine_hz(8.0);
+    let am_synth = carrier * modulator;
 
-
-    // MULTIPLE SIGNALS
-    let source = noise();
-    let cutoff_lfo = lfo(|t| {
-        let lfo_wave = sin_hz(4.0, t);
-        xerp11(100.0, 5000.0, lfo_wave)
-    });
-    // You can stack multiple signals with the stack | operator
-    // This lets you use nodes that require multiple inputs (like lowrez, which expects audio, cutoff frequency and q factor)
-    // The pass() function just takes the incoming signal and passes it to the output without changing it
-    let synth = source >> (pass() | cutoff_lfo | dc(1.0)) >> lowrez();
-
+    // To create tiem varying signals you can use the lfo() or envelope() function
+    // They are just functions that take time as an input
+    let osc = sine_hz(440.0);
+    // Filter control has three outputs 
+    // pass() just pipes the input through andlfo has two outputs
+    // First is a time based sin to control the cutoff and second is a constant signal for the Q of the filter
+    let filter_control = pass() | lfo(
+        |t| (xerp11(100.0, 2000.0, sin_hz(2.0, t)), 1.0));
+    let synth = osc >> filter_control >> lowpass();
 
     // Define the node graph
     let mut graph = synth * 0.2;
