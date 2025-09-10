@@ -53,6 +53,45 @@ fn main() {
     // The pass() function just takes the incoming signal and passes it to the output without changing it
     let synth = source >> (pass() | cutoff_lfo | dc(1.0)) >> lowrez();
 
+    // CUSTOM NODES
+    // You can create your own nodes that take input using pass(), process it and generate some output
+    let lfo_filter = (pass() | lfo(|t| {xerp11(200.0, 2000.0, sin_hz(8.0, t))}) | dc(1.0)) >> lowpass();
+    let synth = noise() >> lfo_filter;
+
+
+    // TRIGGER ADSR ENVELOPE
+    // This creates a repeating trigger which is used as an input for an adsr envelope
+    let pulse_period = 2.0;
+    let pulse_duration = 0.02; // A very short 20ms trigger pulse.
+    let trigger = lfo(move |t| {
+        // t % pulse_period gives a repeating ramp from 0.0 to 2.0
+        // If we are in the first 20ms of that ramp, output 1.0.
+        if t % pulse_period < pulse_duration {
+            1.0
+        } else {
+            0.0
+        }
+    });
+    let vca = trigger >> adsr_live(0.01, 0.0, 1.0, 0.4);
+    let synth = sine_hz(440.0) * vca;
+
+
+    // ARPEGGIO SEQUENCER
+    let tempo_bpm = 120.0;
+    // Define beat duration by dividing one minute by bpm, which gives you the duration for one beat
+    let beat_tempo = 60.0 / tempo_bpm; 
+    // Divide it by two so you get the duration for half beat
+    let beat_duration = beat_tempo / 2.0;
+    let notes = [261.63, 329.63, 392.00, 493.88];
+    let sequencer = lfo(move |t| {
+        let current_beat = (t / beat_duration) as i64;
+        let note_index = (current_beat % 4) as usize;
+        let frequency = notes[note_index];
+        frequency
+    });
+    // Use the sequencer signal to set the frequency of the osciallator
+    let synth = sequencer >> sine();
+
 
     // Define the node graph
     let mut graph = synth * 0.2;
