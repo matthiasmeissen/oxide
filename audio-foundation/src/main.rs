@@ -1,13 +1,16 @@
-use std::time::Instant;
+use std::{os::macos::raw::stat, time::Instant};
 use winit::{event::*, event_loop::{ControlFlow, EventLoop}, keyboard::{PhysicalKey, KeyCode}, window::{Window, WindowBuilder}};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::hacker::*;
 
+#[derive(Debug)]
 struct State {
     window: Window,
     start_time: Instant,
     notes: Vec<f64>,
     bpm: f64,
+    tempo_index: usize,
+    tempo_options: Vec<f64>,
 }
 
 impl State {
@@ -25,16 +28,49 @@ impl State {
             midi_hz(67.0),
         ];
 
-        Self { window, start_time, notes, bpm: 120.0 }
+        let tempo_options = vec![0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
+        Self { 
+            window, 
+            start_time, 
+            notes, 
+            bpm: 120.0, 
+            tempo_index: 4, 
+            tempo_options 
+        }
     }
 
     fn get_sequencer_value(&self) -> f64 {
         let elapsed_time = self.start_time.elapsed().as_secs_f64();
-        let period= 60.0 / self.bpm;
+        let period= 60.0 / self.bpm / self.tempo_options[self.tempo_index];
         let phasor = (elapsed_time % period) / period;
 
         let index = (phasor * self.notes.len() as f64).floor() as usize;
         self.notes[index]
+    }
+
+    fn trigger_envelope(&self) -> f64 {
+        let elapsed_time = self.start_time.elapsed().as_secs_f64();
+        let period= 60.0 / self.bpm / self.tempo_options[self.tempo_index] / self.notes.len() as f64;
+        let phasor = (elapsed_time % period) / period;
+
+        if phasor < 0.2 {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    fn increase_tempo(&mut self) {
+        if self.tempo_index != self.tempo_options.len() - 1 {
+            self.tempo_index += 1;
+        }
+    }
+
+    fn decrease_tempo(&mut self) {
+        if self.tempo_index != 0 {
+            self.tempo_index -= 1;
+        }
     }
 }
 
@@ -52,7 +88,14 @@ fn main() {
     let channels = stream_config.channels as usize;
 
     let freq = shared(440.0);
-    let synth= var(&freq) >> sine();
+    let modulator = shared(5.0);
+    let trigger = shared(0.0);
+
+    let fm_synth = oversample(var(&freq) >> sine() * var(&freq) * var(&modulator) + var(&freq) >> sine());
+    let filter = (pass() | dc(800.0) | dc(0.8)) >> lowrez();
+    let env = var(&trigger) >> adsr_live(0.002, 0.0, 1.0, 0.1);
+    let synth= fm_synth >> filter * env;
+
     let mut node = synth * 0.2;
     node.set_sample_rate(sample_rate);
 
@@ -102,16 +145,30 @@ fn main() {
                         let y = position.y / state.window.inner_size().height as f64;
                         println!("Mouse position: {x}, {y}");
 
-                        state.bpm = lerp(80.0, 120.0, x);
+                        modulator.set_value(y * 10.0);
                     },
                     WindowEvent::KeyboardInput { event, .. } => {
                         match (event.physical_key, event.state) {
+                            (PhysicalKey::Code(KeyCode::ArrowUp), ElementState::Pressed) => {
+                                state.bpm += 1.0;
+                                println!("Set BPM to {}", state.bpm);
+                            },
+                            (PhysicalKey::Code(KeyCode::ArrowDown), ElementState::Pressed) => {
+                                state.bpm -= 1.0;
+                                println!("Set BPM to {}", state.bpm);
+                            },
+                            (PhysicalKey::Code(KeyCode::ArrowRight), ElementState::Pressed) => {
+                                println!("{:?}", state);
+                                state.increase_tempo();
+                            },
+                            (PhysicalKey::Code(KeyCode::ArrowLeft), ElementState::Pressed) => {
+                                println!("{:?}", state);
+                                state.decrease_tempo();
+                            },
                             (PhysicalKey::Code(KeyCode::KeyA), ElementState::Pressed) => {
                                 println!("Key A pressed.");
                                 state.notes.push(midi_hz(48.0));
-
                                 println!("Notes is now: {:?}", state.notes);
-
                             },
                             (PhysicalKey::Code(KeyCode::KeyA), ElementState::Released) => {
                                 println!("Key A Released.");
@@ -121,6 +178,8 @@ fn main() {
                     }
                     WindowEvent::RedrawRequested {} => {
                         freq.set_value(state.get_sequencer_value());
+
+                        trigger.set_value(state.trigger_envelope());
 
                         state.window.request_redraw();
                     }
