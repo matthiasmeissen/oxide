@@ -5,6 +5,8 @@
 
 - [cpal](https://crates.io/crates/cpal)
 - [fundsp](https://crates.io/crates/fundsp)
+- [midir](https://crates.io/crates/midir)
+- [rtrb](https://crates.io/crates/rtrb)
 
 ## Ressources
 

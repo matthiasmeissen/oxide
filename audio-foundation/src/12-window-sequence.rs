@@ -1,8 +1,7 @@
-use std::{sync::mpsc, time::Instant};
+use std::{os::macos::raw::stat, time::Instant};
 use winit::{event::*, event_loop::{ControlFlow, EventLoop}, keyboard::{PhysicalKey, KeyCode}, window::{Window, WindowBuilder}};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::hacker::*;
-use midir::{Ignore, MidiInput};
 
 #[derive(Debug)]
 struct State {
@@ -91,10 +90,9 @@ fn main() {
     let freq = shared(440.0);
     let modulator = shared(5.0);
     let trigger = shared(0.0);
-    let cutoff = shared(800.0);
 
     let fm_synth = oversample(var(&freq) >> sine() * var(&freq) * var(&modulator) + var(&freq) >> sine());
-    let filter = (pass() | var(&cutoff) | dc(0.8)) >> lowrez();
+    let filter = (pass() | dc(800.0) | dc(0.8)) >> lowrez();
     let env = var(&trigger) >> adsr_live(0.002, 0.0, 1.0, 0.1);
     let synth= fm_synth >> filter * env;
 
@@ -127,40 +125,7 @@ fn main() {
     stream.play().expect("Could not start audio stream.");
     println!("Audio pipeline is running.");
 
-    let (sender, receiver) = mpsc::channel();
-
-    std::thread::spawn(move || {
-        let mut midi_in = MidiInput::new("Midi Input 1").unwrap();
-        midi_in.ignore(Ignore::None);
-
-        let in_ports = midi_in.ports();
-        let port = match in_ports.len() {
-            0 => {
-                println!("No midi port available.");
-                return;
-            },
-            1 => {
-                println!("Connecting to port {}", midi_in.port_name(&in_ports[0]).unwrap());
-                &in_ports[0]
-            },
-            _ => {
-                println!("Too many ports.");
-                return;
-            },
-        };
-
-        let _connection = midi_in.connect(
-            port, "Midi Input", move|timestamp, message, _| {
-                sender.send(message.to_vec()).unwrap();
-            }, ()
-        ).unwrap();
-
-        loop {
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-    });
-
-
+    
     // Window Creation
     let event_loop = EventLoop::new().unwrap();
 
@@ -168,25 +133,6 @@ fn main() {
 
     event_loop.run(move |event, elwt| {
         elwt.set_control_flow(ControlFlow::Poll);
-
-        if let Ok(message) = receiver.try_recv() {
-            println!("Received MIDI message: {:?}", message);
-
-            if message[0] == 176 {
-                let input = message[2] as f64 / 128.0;
-                let val = xerp11(100.0, 4000.0, input);
-                cutoff.set_value(val);
-            }
-
-            if message[0] == 144 {
-                let midi_note = message[1] as f64;
-                if state.notes[state.notes.len() - 1] != midi_hz(midi_note) {
-                    state.notes.push(midi_hz(midi_note));
-                    println!("Add new note: {midi_note}");
-                }
-            }
-        }
-
         match event {
             Event::WindowEvent {event, ..} => {
                 match event {
