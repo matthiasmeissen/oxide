@@ -4,10 +4,7 @@ use eframe::egui;
 fn main() -> eframe::Result {
     env_logger::init();
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
-        ..Default::default()
-    };
+    let options = eframe::NativeOptions::default();
 
     let mut value = 0.0;
 
