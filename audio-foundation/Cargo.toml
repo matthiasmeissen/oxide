@@ -1,0 +1,11 @@
+[package]
+name = "audio-foundation"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cpal = "0.15.3"
+fundsp = "0.15.0"
+winit = "0.29"
+midir = "0.9.1"
+softbuffer = "0.4"
