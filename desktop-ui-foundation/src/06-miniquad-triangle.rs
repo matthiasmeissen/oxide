@@ -18,12 +18,11 @@ impl Stage {
     fn new() -> Self {
         let mut ctx = window::new_rendering_backend();
 
-        // Define vertices with position and uv
-        let vertices: [Vertex; 4] = [
-            Vertex {pos: [-1.0, -1.0], uv: [0.0, 0.0]},
-            Vertex {pos: [1.0, -1.0], uv: [1.0, 0.0]},
-            Vertex {pos: [1.0, 1.0], uv: [1.0, 1.0]},
-            Vertex {pos: [-1.0, 1.0], uv: [0.0, 1.0]},
+        // Define vertices with position and color (color defaults to white)
+        let vertices: [Vertex; 3] = [
+            vert([-1.0, 1.0]),
+            vert([1.0, 1.0]),
+            vert([1.0, -1.0]),
         ];
 
         // Create vertex buffer with the defined vertices
@@ -34,7 +33,7 @@ impl Stage {
         );
 
         // Define indices, in which order the vertices connect
-        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+        let indices: [u16; 3] = [0, 1, 2];
 
         // Create index buffer with the defined indices
         let index_buffer = ctx.new_buffer(
@@ -47,8 +46,8 @@ impl Stage {
         // as well as setting meta information
         let shader = ctx.new_shader(
             ShaderSource::Glsl { 
-                vertex: &load_shader("src/miniquad/vert-02.glsl"), 
-                fragment: &load_shader("src/miniquad/frag-02.glsl") 
+                vertex: &load_shader("src/miniquad/vert-01.glsl"), 
+                fragment: &load_shader("src/miniquad/frag-01.glsl") 
             },
             shader_meta()
         ).expect("Something is not working");
@@ -65,7 +64,7 @@ impl Stage {
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
-                VertexAttribute::new("in_uv", VertexFormat::Float2)
+                VertexAttribute::new("in_color", VertexFormat::Float4)
             ],
             shader,
             PipelineParams::default()
@@ -90,7 +89,7 @@ impl EventHandler for Stage {
         self.ctx.apply_pipeline(&self.pipeline);
         self.ctx.apply_bindings(&self.bindings);
 
-        self.ctx.draw(0, 6, 1);
+        self.ctx.draw(0, 3, 1);
 
         self.ctx.end_render_pass();
         self.ctx.commit_frame();
@@ -100,7 +99,11 @@ impl EventHandler for Stage {
 #[repr(C)]
 struct Vertex {
     pos: [f32; 2],      // x, y
-    uv: [f32; 2],       // u, v
+    color: [f32; 4],    // r, g, b, a
+}
+
+fn vert(pos: [f32; 2]) -> Vertex {
+    Vertex { pos, color: [1.0; 4] }
 }
 
 fn load_shader(path: &str) -> String {
