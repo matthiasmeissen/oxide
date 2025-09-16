@@ -22,10 +22,12 @@ pub mod shared {
 mod app_main {
     use miniquad::*;
     use std::{fs, time::{Instant}};
+    use std::io::{stdin, stdout, Write};
     use glam::*;
     use cpal::{traits::{DeviceTrait, HostTrait, StreamTrait}};
     use fundsp::hacker32::*;
     use crossbeam_channel::{bounded, Receiver, Sender};
+    use midir::*;
     use crate::shared::*;
 
     pub struct Stage {
@@ -81,7 +83,7 @@ mod app_main {
             let shader = ctx.new_shader(
                 ShaderSource::Glsl { 
                     vertex: VERTEX, 
-                    fragment: &load_shader("src/miniquad/shader-02.glsl") 
+                    fragment: &load_shader("src/miniquad/shader-03.glsl") 
                 },
                 shader_meta()
             ).expect("Something is not working");
@@ -200,6 +202,46 @@ mod app_main {
             ..Default::default()
         };
 
+        std::thread::spawn(move || {
+            let mut midi_in = MidiInput::new("Midi Input 1").unwrap();
+            midi_in.ignore(Ignore::None);
+
+            let in_ports = midi_in.ports();
+            let port = match in_ports.len() {
+                0 => {
+                    println!("No midi port available.");
+                    return;
+                },
+                1 => {
+                    println!("Connecting to the only available port: {}", midi_in.port_name(&in_ports[0]).unwrap());
+                    &in_ports[0]
+                },
+                _ => {
+                    println!("\nAvailable input ports:");
+                    for (i, p) in in_ports.iter().enumerate() {
+                        println!("{}: {}", i, midi_in.port_name(p).unwrap());
+                    }
+                    print!("Please select input port: ");
+                    stdout().flush().unwrap();
+                    let mut input = String::new();
+                    stdin().read_line(&mut input).unwrap();
+                    in_ports
+                        .get(input.trim().parse::<usize>().unwrap())
+                        .ok_or("invalid input port selected").unwrap()
+                }
+            };
+
+            let _connection = midi_in.connect(
+                port, "Midi Input", move|timestamp, message, _| {
+                    println!("{:?}", message);
+                }, ()
+            ).unwrap();
+
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        });
+
         let host = cpal::default_host();
         let device = host
             .default_output_device()
@@ -266,3 +308,4 @@ fn main() {
 
     app_main::run();
 }
+
