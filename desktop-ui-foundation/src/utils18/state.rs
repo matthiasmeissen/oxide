@@ -19,4 +19,12 @@ pub enum Message {
     SetTime(f64),
     SetResolution(f64, f64),
     SetValue(usize, f64),
+    MidiInput(MidiMessage),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MidiMessage {
+    NoteOn { note: u8, velocity: u8 },
+    NoteOff { note: u8 },
+    ControlChange { controller: u8, value: u8 },
 }

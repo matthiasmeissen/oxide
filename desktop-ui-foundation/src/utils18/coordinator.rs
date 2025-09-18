@@ -4,6 +4,8 @@ use std::thread;
 use crossbeam_channel::Receiver;
 use triple_buffer::Input;
 
+const DEBUG: bool = false;
+
 pub fn start_coordinator_thread(
     receiver: Receiver<Message>, 
     mut window_writer: Input<State>, 
@@ -18,13 +20,35 @@ pub fn start_coordinator_thread(
                 Message::SetTime(t) => current_state.time = t,
                 Message::SetResolution(w, h) => current_state.resolution = [w, h],
                 Message::SetValue(i, v) => current_state.values[i] = v,
+                Message::MidiInput(midi) => match midi {
+                    MidiMessage::ControlChange { controller, value } => {
+                        if controller == 77 {
+                            let val = value as f64 / 128.0;
+                            current_state.values[0] = val;
+                        }
+                        if controller == 78 {
+                            let val = value as f64 / 128.0;
+                            current_state.values[1] = val;
+                        }
+                        if controller == 79 {
+                            let val = value as f64 / 128.0;
+                            current_state.values[2] = val;
+                        }
+                        if controller == 80 {
+                            let val = value as f64 / 128.0;
+                            current_state.values[3] = val;
+                        }
+                        println!("{:?}", current_state);
+                    }
+                    _ => ()
+                },
             }
 
             if current_state != last_published_state {
                 window_writer.write(current_state);
                 audio_writer.write(current_state);
                 last_published_state = current_state;
-                println!("// -> Cooridnator published new state.");
+                if DEBUG {println!("// -> Cooridnator published new state. {:#?}", current_state)} else {};
             }
         }
     });

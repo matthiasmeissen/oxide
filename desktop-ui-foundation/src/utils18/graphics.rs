@@ -122,11 +122,11 @@ impl EventHandler for Stage {
         let state = self.reader.read();
 
         let uniforms = Uniforms { 
-            u_time: state.time,
-            u_param1: state.values[0],
-            u_param2: state.values[1],
-            u_param3: state.values[2],
-            u_param4: state.values[3],
+            u_time: state.time as f32,
+            u_param1: state.values[0] as f32,
+            u_param2: state.values[1] as f32,
+            u_param3: state.values[2] as f32,
+            u_param4: state.values[3] as f32,
         };
         self.ctx.apply_uniforms(UniformsSource::table(&uniforms));
 
@@ -143,13 +143,18 @@ struct Vertex {
     uv: [f32; 2],
 }
 
+// You have to define your uniforms in three places
+// In the struct Uniforms
+// In the ShaderMeta
+// In the draw function of the EventHandler implementation for Stage
 #[repr(C)]
 struct Uniforms {
-    u_time: f64,
-    u_param1: f64,
-    u_param2: f64,
-    u_param3: f64,
-    u_param4: f64,
+    // Important: uniforms are f32 type
+    u_time: f32,
+    u_param1: f32,
+    u_param2: f32,
+    u_param3: f32,
+    u_param4: f32,
 }
 
 fn shader_meta() -> ShaderMeta {
