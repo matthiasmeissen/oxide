@@ -17,14 +17,15 @@ void main() {
     #define rot(a) mat2(cos(a), -sin(a), sin(a), cos(a))
 
     // Parameters
-    float freqx = u_param1 * 20.0;
-    float freqy = u_param2 * 20.0;
-    float speed = u_param3 * 4.0;
-    float rotation = u_param4 * 3.14;
+    float freqx = u_param1 * 40.0;
+    float freqy = u_param2 * 40.0;
+    float rotation = u_param3 * 3.14;
+    float size = u_param4 * 2.0;
 
+    uv *= size;
     uv = uv * rot(rotation);
 
-    float d = sin(uv.x * freqx + cos(uv.y * freqy) + u_time * speed);
+    float d = sin(uv.x * freqx + cos(uv.y * freqy) + u_time);
 
     vec3 col = vec3(d);
 
