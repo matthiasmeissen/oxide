@@ -1,13 +1,16 @@
 use crate::utils::state::*;
 
 use miniquad::*;
-use std::{fs, time::Instant, time::Duration};
+use std::{fs, time::Instant};
 use crossbeam_channel::Sender;
 use triple_buffer::Output;
 
-pub fn start_graphics_thread(window_sender: Sender<Message>, mut window_reader: Output<State>) {
+pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Output<State>) {
     let conf = conf::Conf {
         window_title: String::from("Window Title"),
+        high_dpi: true,
+        window_width: 960,
+        window_height: 540,
         ..Default::default()
     };
 
@@ -24,7 +27,7 @@ struct Stage {
 }
 
 impl Stage {
-    fn new(sender: Sender<Message>, mut reader: Output<State>) -> Self {
+    fn new(sender: Sender<Message>, reader: Output<State>) -> Self {
         let mut ctx = window::new_rendering_backend();
 
         // Define vertices with position and uv
@@ -123,6 +126,7 @@ impl EventHandler for Stage {
 
         let uniforms = Uniforms { 
             u_time: state.time as f32,
+            u_resolution: state.resolution,
             u_param1: state.values[0] as f32,
             u_param2: state.values[1] as f32,
             u_param3: state.values[2] as f32,
@@ -134,6 +138,11 @@ impl EventHandler for Stage {
 
         self.ctx.end_render_pass();
         self.ctx.commit_frame();
+    }
+
+    fn resize_event(&mut self, width: f32, height: f32) {
+        self.sender.try_send(Message::SetResolution(width, height)).unwrap();
+        println!("Set resolution to: {width}, {height}");
     }
 }
 
@@ -151,6 +160,7 @@ struct Vertex {
 struct Uniforms {
     // Important: uniforms are f32 type
     u_time: f32,
+    u_resolution: [f32; 2],
     u_param1: f32,
     u_param2: f32,
     u_param3: f32,
@@ -162,6 +172,7 @@ fn shader_meta() -> ShaderMeta {
         uniforms: UniformBlockLayout { 
             uniforms: vec![
                 UniformDesc::new("u_time", UniformType::Float1),
+                UniformDesc::new("u_resolution", UniformType::Float2),
                 UniformDesc::new("u_param1", UniformType::Float1),
                 UniformDesc::new("u_param2", UniformType::Float1),
                 UniformDesc::new("u_param3", UniformType::Float1),

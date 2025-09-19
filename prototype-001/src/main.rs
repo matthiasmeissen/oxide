@@ -16,8 +16,8 @@ use triple_buffer::TripleBuffer;
 
 fn main() {
     let (sender, receiver) = crossbeam_channel::bounded(5);
-    let (mut window_writer, mut window_reader) = TripleBuffer::new(&State::default()).split();
-    let (mut audio_writer, mut audio_reader) = TripleBuffer::new(&State::default()).split();
+    let (window_writer, window_reader) = TripleBuffer::new(&State::default()).split();
+    let (audio_writer, audio_reader) = TripleBuffer::new(&State::default()).split();
 
     start_coordinator_thread(receiver, window_writer, audio_writer);
 

@@ -18,7 +18,10 @@ pub fn start_coordinator_thread(
         while let Ok(update) = receiver.recv() {
             match update {
                 Message::SetTime(t) => current_state.time = t,
-                Message::SetResolution(w, h) => current_state.resolution = [w, h],
+                Message::SetResolution(w, h) => {
+                    println!("{:?}", current_state);
+                    current_state.resolution = [w, h]
+                },
                 Message::SetValue(i, v) => current_state.values[i] = v,
                 Message::MidiInput(midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {

@@ -779,19 +779,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 
 [[package]]
-name = "oxide-001"
-version = "0.1.0"
-dependencies = [
- "cpal",
- "crossbeam-channel",
- "env_logger",
- "fundsp",
- "midir",
- "miniquad",
- "triple_buffer",
-]
-
-[[package]]
 name = "parking_lot"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -871,6 +858,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89ae43fd86e4158d6db51ad8e2b80f313af9cc74f5c0e03ccb87de09998732de"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "prototype-001"
+version = "0.1.0"
+dependencies = [
+ "cpal",
+ "crossbeam-channel",
+ "env_logger",
+ "fundsp",
+ "midir",
+ "miniquad",
+ "triple_buffer",
 ]
 
 [[package]]
