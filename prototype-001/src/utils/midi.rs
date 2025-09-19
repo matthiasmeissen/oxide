@@ -40,7 +40,7 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
         let _connection = midi_in.connect(
             port, "Midi Input", move |_timestamp, message, _| {
                 if let Some(parsed_message) = parse_midi_message(message) {
-                    println!("MIDI parsed: {:?}", parsed_message);
+                    //println!("MIDI parsed: {:?}", parsed_message);
                     midi_sender.try_send(Message::MidiInput(parsed_message)).ok();
                 }
             }, ()

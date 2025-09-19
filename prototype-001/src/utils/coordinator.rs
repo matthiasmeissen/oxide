@@ -22,7 +22,10 @@ pub fn start_coordinator_thread(
                     println!("{:?}", current_state);
                     current_state.resolution = [w, h]
                 },
-                Message::SetValue(i, v) => current_state.values[i] = v,
+                Message::SetValue(i, v) => {
+                    println!("{:?}", current_state);
+                    current_state.values[i] = v
+                },
                 Message::MidiInput(midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {
                         if controller == 77 {

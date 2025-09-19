@@ -2,7 +2,7 @@
 pub struct State {
     pub time: f64,
     pub resolution: [f32; 2],
-    pub values: [f64; 4],
+    pub values: [f64; 8],
 }
 
 impl Default for State {
@@ -10,7 +10,7 @@ impl Default for State {
         Self { 
             time: 0.0, 
             resolution: [1920.0, 1080.0], 
-            values: [0.5; 4] 
+            values: [0.5; 8] 
         }
     }
 }

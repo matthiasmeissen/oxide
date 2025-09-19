@@ -130,10 +130,14 @@ impl EventHandler for Stage {
         let uniforms = Uniforms { 
             u_time: state.time as f32,
             u_resolution: state.resolution,
-            u_param1: state.values[0] as f32,
-            u_param2: state.values[1] as f32,
-            u_param3: state.values[2] as f32,
-            u_param4: state.values[3] as f32,
+            u_cv1: state.values[0] as f32,
+            u_cv2: state.values[1] as f32,
+            u_cv3: state.values[2] as f32,
+            u_cv4: state.values[3] as f32,
+            u_gate1: state.values[4] as f32,
+            u_gate2: state.values[5] as f32,
+            u_gate3: state.values[6] as f32,
+            u_gate4: state.values[7] as f32,
         };
         self.ctx.apply_uniforms(UniformsSource::table(&uniforms));
 
@@ -160,6 +164,26 @@ impl EventHandler for Stage {
             self.sender.try_send(Message::SetValue(1, norm_y)).ok();
         }
     }
+
+    fn key_down_event(&mut self, keycode: KeyCode, _keymods: KeyMods, _repeat: bool) {
+        match keycode {
+            KeyCode::Key1 => {self.sender.try_send(Message::SetValue(4, 1.0)).ok();},
+            KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
+            KeyCode::Key3 => {self.sender.try_send(Message::SetValue(6, 1.0)).ok();},
+            KeyCode::Key4 => {self.sender.try_send(Message::SetValue(7, 1.0)).ok();},
+            _ => (),
+        }
+    }
+
+    fn key_up_event(&mut self, keycode: KeyCode, _keymods: KeyMods) {
+        match keycode {
+            KeyCode::Key1 => {self.sender.try_send(Message::SetValue(4, 0.0)).ok();},
+            KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 0.0)).ok();},
+            KeyCode::Key3 => {self.sender.try_send(Message::SetValue(6, 0.0)).ok();},
+            KeyCode::Key4 => {self.sender.try_send(Message::SetValue(7, 0.0)).ok();},
+            _ => (),
+        }
+    }
 }
 
 #[repr(C)]
@@ -177,10 +201,14 @@ struct Uniforms {
     // Important: uniforms are f32 type
     u_time: f32,
     u_resolution: [f32; 2],
-    u_param1: f32,
-    u_param2: f32,
-    u_param3: f32,
-    u_param4: f32,
+    u_cv1: f32,
+    u_cv2: f32,
+    u_cv3: f32,
+    u_cv4: f32,
+    u_gate1: f32,
+    u_gate2: f32,
+    u_gate3: f32,
+    u_gate4: f32,
 }
 
 fn shader_meta() -> ShaderMeta {
@@ -189,10 +217,14 @@ fn shader_meta() -> ShaderMeta {
             uniforms: vec![
                 UniformDesc::new("u_time", UniformType::Float1),
                 UniformDesc::new("u_resolution", UniformType::Float2),
-                UniformDesc::new("u_param1", UniformType::Float1),
-                UniformDesc::new("u_param2", UniformType::Float1),
-                UniformDesc::new("u_param3", UniformType::Float1),
-                UniformDesc::new("u_param4", UniformType::Float1),
+                UniformDesc::new("u_cv1", UniformType::Float1),
+                UniformDesc::new("u_cv2", UniformType::Float1),
+                UniformDesc::new("u_cv3", UniformType::Float1),
+                UniformDesc::new("u_cv4", UniformType::Float1),
+                UniformDesc::new("u_gate1", UniformType::Float1),
+                UniformDesc::new("u_gate2", UniformType::Float1),
+                UniformDesc::new("u_gate3", UniformType::Float1),
+                UniformDesc::new("u_gate4", UniformType::Float1),
             ] 
         }, 
         images: vec![] 
