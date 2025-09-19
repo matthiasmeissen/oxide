@@ -9,6 +9,7 @@ pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Outp
     let conf = conf::Conf {
         window_title: String::from("Window Title"),
         high_dpi: true,
+        // Resolution has to be set at three points (here, Stage impl, state.rs)
         window_width: 960,
         window_height: 540,
         ..Default::default()
@@ -24,6 +25,7 @@ struct Stage {
     start_time: std::time::Instant,
     sender: Sender<Message>,
     reader: Output<State>,
+    mq_resolution: [f32; 2],
 }
 
 impl Stage {
@@ -104,7 +106,8 @@ impl Stage {
             ctx,
             start_time: Instant::now(),
             sender,
-            reader
+            reader,
+            mq_resolution: [960.0, 540.0],
         }
     }
 }
@@ -141,8 +144,21 @@ impl EventHandler for Stage {
     }
 
     fn resize_event(&mut self, width: f32, height: f32) {
-        self.sender.try_send(Message::SetResolution(width, height)).unwrap();
+        self.mq_resolution = [width, height];
+        self.sender.try_send(Message::SetResolution(width, height)).ok();
         println!("Set resolution to: {width}, {height}");
+    }
+
+    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+        let dpi_factor = miniquad::window::dpi_scale();
+
+        let norm_x = (x / dpi_factor / self.mq_resolution[0]) as f64;
+        let norm_y = (y / dpi_factor / self.mq_resolution[1]) as f64;
+
+        if norm_x >= 0.0 && norm_x <= 1.0 && norm_y >= 0.0 && norm_y <= 1.0 {
+            self.sender.try_send(Message::SetValue(0, norm_x)).ok();
+            self.sender.try_send(Message::SetValue(1, norm_y)).ok();
+        }
     }
 }
 
