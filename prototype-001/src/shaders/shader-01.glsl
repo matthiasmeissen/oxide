@@ -19,17 +19,20 @@ void main() {
     // Parameters
     float freqx = u_param1 * 40.0;
     float freqy = u_param2 * 40.0;
-    float rotation = u_param3 * 3.14;
-    float size = u_param4 * 2.0;
+    float brightness = mix(0.2, 1.4, u_param3);
+    float rotation = u_param4 * 3.14;
 
-    uv *= size;
+    uv -= 0.5;
     uv = uv * rot(rotation);
+    uv *= mix(1.0, 4.0, u_param4);
+    uv = mix(uv, uv * uv, u_param4);
+    uv += 0.5;
 
     float d = sin(uv.x * freqx + cos(uv.y * freqy) + u_time);
 
     float circle = step(length(p), 0.8);
 
-    vec3 col = vec3(d * circle);
+    vec3 col = vec3(d * circle) * brightness;
 
     gl_FragColor = vec4(col, 1.0);
 }
