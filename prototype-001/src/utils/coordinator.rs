@@ -28,23 +28,27 @@ pub fn start_coordinator_thread(
                 },
                 Message::MidiInput(midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {
-                        if controller == 77 {
-                            let val = value as f64 / 128.0;
-                            current_state.values[0] = val;
-                        }
-                        if controller == 78 {
-                            let val = value as f64 / 128.0;
-                            current_state.values[1] = val;
-                        }
-                        if controller == 79 {
-                            let val = value as f64 / 128.0;
-                            current_state.values[2] = val;
-                        }
-                        if controller == 80 {
-                            let val = value as f64 / 128.0;
-                            current_state.values[3] = val;
-                        }
+                        // From Novation
+                        if controller == 77 { current_state.values[0] = normalize_midi(value); }
+                        if controller == 78 { current_state.values[1] = normalize_midi(value); }
+                        if controller == 79 { current_state.values[2] = normalize_midi(value); }
+                        if controller == 80 { current_state.values[3] = normalize_midi(value); }
+
+                        // From OP-Z
+                        if controller == 1 { current_state.values[0] = normalize_midi(value); }
+                        if controller == 2 { current_state.values[1] = normalize_midi(value); }
+                        if controller == 3 { current_state.values[2] = normalize_midi(value); }
+                        if controller == 4 { current_state.values[3] = normalize_midi(value); }
+
                         println!("{:?}", current_state);
+                    }
+                    MidiMessage::NoteOn { note, velocity } => {
+                        // From OP-Z
+                        if note == 53 { current_state.values[4] = 1.0 }
+                    }
+                    MidiMessage::NoteOff { note } => {
+                        // From OP-Z
+                        if note == 53 { current_state.values[4] = 0.0 }
                     }
                     _ => ()
                 },
@@ -58,4 +62,8 @@ pub fn start_coordinator_thread(
             }
         }
     });
+}
+
+fn normalize_midi(value: u8) -> f64 {
+    value as f64 / 128.0
 }

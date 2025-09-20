@@ -136,6 +136,7 @@ impl Stage {
     }
 
     fn change_shader(&mut self) {
+        // This cycles through all available shaders
         self.current_shader_index = (self.current_shader_index + 1) % self.shader_paths.len();
         let new_shader_path = &self.shader_paths[self.current_shader_index];
 
@@ -295,11 +296,6 @@ fn shader_meta() -> ShaderMeta {
     }
 }
 
-fn load_shader(path: &str) -> String {
-    fs::read_to_string(path)
-    .expect(&format!("Failed to read shader: {path}"))
-}
-
 fn load_shaders_from_dir(dir_path: &std::path::Path) -> std::io::Result<Vec<String>> {
     let mut shader_paths = vec![];
 
@@ -315,6 +311,5 @@ fn load_shaders_from_dir(dir_path: &std::path::Path) -> std::io::Result<Vec<Stri
     };
 
     shader_paths.sort();
-
     Ok(shader_paths)
 }

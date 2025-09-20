@@ -12,17 +12,22 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
 
         let in_ports = midi_in.ports();
 
-        let port = match in_ports.len() {
-            0 => {
-                println!("No midi port available.");
-                return;
+        if in_ports.is_empty() {
+            println!("No midi port available.");
+            return;
+        }
+
+        let target_port = in_ports.iter().find(|p| {
+            midi_in.port_name(p).unwrap_or_default().contains("OP-Z")
+        });
+
+        let port = match target_port {
+            Some(p) => {
+                println!("Automatically connected to port: {}", midi_in.port_name(p).unwrap());
+                p
             },
-            1 => {
-                println!("Connecting to the only available port: {}", midi_in.port_name(&in_ports[0]).unwrap());
-                &in_ports[0]
-            },
-            _ => {
-                println!("\nAvailable input ports:");
+            None => {
+                println!("\nCould not use automatic port. Available input ports:");
                 for (i, p) in in_ports.iter().enumerate() {
                     println!("{}: {}", i, midi_in.port_name(p).unwrap());
                 }
@@ -40,7 +45,7 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
         let _connection = midi_in.connect(
             port, "Midi Input", move |_timestamp, message, _| {
                 if let Some(parsed_message) = parse_midi_message(message) {
-                    //println!("MIDI parsed: {:?}", parsed_message);
+                    println!("MIDI parsed: {:?}", parsed_message);
                     midi_sender.try_send(Message::MidiInput(parsed_message)).ok();
                 }
             }, ()
