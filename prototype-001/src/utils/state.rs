@@ -9,7 +9,7 @@ impl Default for State {
     fn default() -> Self {
         Self { 
             time: 0.0, 
-            resolution: [1920.0, 1080.0], 
+            resolution: [0.0, 0.0], 
             values: [0.5; 8] 
         }
     }

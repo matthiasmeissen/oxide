@@ -101,6 +101,10 @@ impl Stage {
             PipelineParams::default()
         );
 
+
+        let (width, height) = window::screen_size();
+        sender.try_send(Message::SetResolution(width, height)).ok();
+
         Self { 
             pipeline, 
             bindings, 
