@@ -5,6 +5,21 @@ use std::{fs, time::Instant};
 use crossbeam_channel::Sender;
 use triple_buffer::Output;
 
+const VERTEX: &str = r#"
+    #version 100
+    precision mediump float;
+
+    attribute vec2 in_pos;
+    attribute vec2 in_uv;
+
+    varying mediump vec2 v_uv;
+
+    void main() {
+        v_uv = in_uv;
+        gl_Position = vec4(in_pos, 0, 1);
+    }
+"#;
+
 pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Output<State>) {
     let conf = conf::Conf {
         window_title: String::from("Window Title"),
@@ -27,6 +42,8 @@ struct Stage {
     reader: Output<State>,
     mq_resolution: [f32; 2],
     is_fullscreen: bool,
+    shader_paths: Vec<String>,
+    current_shader_index: usize,
 }
 
 impl Stage {
@@ -58,27 +75,22 @@ impl Stage {
             BufferSource::slice(&indices)
         );
 
-        const VERTEX: &str = r#"
-            #version 100
-            precision mediump float;
+        // Handle shader selection
+        let shader_paths = vec![
+            "src/shaders/shader-01.glsl".to_string(),
+            "src/shaders/shader-02.glsl".to_string(),
+        ];
 
-            attribute vec2 in_pos;
-            attribute vec2 in_uv;
-
-            varying mediump vec2 v_uv;
-
-            void main() {
-                v_uv = in_uv;
-                gl_Position = vec4(in_pos, 0, 1);
-            }
-        "#;
+        let current_shader_index = 0;
+        let initial_shader_source = std::fs::read_to_string(&shader_paths[current_shader_index])
+            .expect("Error reading the initial shader");
 
         // Create shader by loading vertex and fragment shader files
         // as well as setting meta information
         let shader = ctx.new_shader(
             ShaderSource::Glsl { 
                 vertex: VERTEX, 
-                fragment: &load_shader("src/shaders/shader-01.glsl") 
+                fragment: &initial_shader_source, 
             },
             shader_meta()
         ).expect("Something is not working");
@@ -101,7 +113,7 @@ impl Stage {
             PipelineParams::default()
         );
 
-
+        // Set window resolution
         let (width, height) = window::screen_size();
         sender.try_send(Message::SetResolution(width, height)).ok();
 
@@ -114,6 +126,43 @@ impl Stage {
             reader,
             mq_resolution: [960.0, 540.0],
             is_fullscreen: false,
+            shader_paths,
+            current_shader_index,
+        }
+    }
+
+    fn change_shader(&mut self) {
+        self.current_shader_index = (self.current_shader_index + 1) % self.shader_paths.len();
+        let new_shader_path = &self.shader_paths[self.current_shader_index];
+
+        match fs::read_to_string(new_shader_path) {
+            Ok(fragment_source) => {
+                match self.ctx.new_shader(
+                    ShaderSource::Glsl { vertex: VERTEX, fragment: &fragment_source },
+                    shader_meta()
+                ) {
+                    Ok(new_shader) => {
+                        let new_pipeline = self.ctx.new_pipeline(
+                            &[BufferLayout::default()],
+                            &[
+                                VertexAttribute::new("in_pos", VertexFormat::Float2),
+                                VertexAttribute::new("in_uv", VertexFormat::Float2)
+                            ],
+                            new_shader,
+                            PipelineParams::default()
+                        );
+
+                        self.pipeline = new_pipeline;
+                        println!("Successfully swapped to shader: {}", new_shader_path);
+                    }
+                    Err(err) => {
+                        eprintln!("Failed to compile shader '{}': {:?}", new_shader_path, err);
+                    }
+                }
+            }
+            Err(err) => {
+                eprintln!("Failed to load shader file '{}': {}", new_shader_path, err);
+            }
         }
     }
 }
@@ -177,6 +226,7 @@ impl EventHandler for Stage {
             KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
             KeyCode::Key3 => {self.sender.try_send(Message::SetValue(6, 1.0)).ok();},
             KeyCode::Key4 => {self.sender.try_send(Message::SetValue(7, 1.0)).ok();},
+            KeyCode::A => {self.change_shader();}
             KeyCode::F => {
                 self.is_fullscreen = !self.is_fullscreen;
                 window::set_fullscreen(self.is_fullscreen);
