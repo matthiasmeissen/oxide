@@ -135,9 +135,14 @@ impl Stage {
         }
     }
 
-    fn change_shader(&mut self) {
+    fn set_shader(&mut self, new_index: usize) {
         // This cycles through all available shaders
-        self.current_shader_index = (self.current_shader_index + 1) % self.shader_paths.len();
+        let wrapped_index = new_index % self.shader_paths.len();
+        if wrapped_index == self.current_shader_index {
+            return;
+        }
+
+        self.current_shader_index = wrapped_index;
         let new_shader_path = &self.shader_paths[self.current_shader_index];
 
         match fs::read_to_string(new_shader_path) {
@@ -174,7 +179,11 @@ impl Stage {
 
 impl EventHandler for Stage {
     fn update(&mut self) {
+        let new_shader_index = self.reader.read().shader_index;
         
+        if new_shader_index != self.current_shader_index {
+            self.set_shader(new_shader_index);
+        }
     }
 
     fn draw(&mut self) {
@@ -231,11 +240,14 @@ impl EventHandler for Stage {
             KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
             KeyCode::Key3 => {self.sender.try_send(Message::SetValue(6, 1.0)).ok();},
             KeyCode::Key4 => {self.sender.try_send(Message::SetValue(7, 1.0)).ok();},
-            KeyCode::A => {self.change_shader();}
             KeyCode::F => {
                 self.is_fullscreen = !self.is_fullscreen;
                 window::set_fullscreen(self.is_fullscreen);
             }
+            KeyCode::Right => {
+                let next_index = self.current_shader_index + 1;
+                self.sender.try_send(Message::SetShaderIndex(next_index)).ok();
+            },
             _ => (),
         }
     }

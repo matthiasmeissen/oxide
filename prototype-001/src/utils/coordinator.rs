@@ -26,6 +26,9 @@ pub fn start_coordinator_thread(
                     println!("{:?}", current_state);
                     current_state.values[i] = v
                 },
+                Message::SetShaderIndex(i) => {
+                    current_state.shader_index = i
+                }
                 Message::MidiInput(midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {
                         // From Novation
@@ -45,6 +48,7 @@ pub fn start_coordinator_thread(
                     MidiMessage::NoteOn { note, velocity } => {
                         // From OP-Z
                         if note == 53 { current_state.values[4] = 1.0 }
+                        if note == 54 { current_state.shader_index += 1 }
                     }
                     MidiMessage::NoteOff { note } => {
                         // From OP-Z

@@ -3,6 +3,7 @@ pub struct State {
     pub time: f64,
     pub resolution: [f32; 2],
     pub values: [f64; 8],
+    pub shader_index: usize,
 }
 
 impl Default for State {
@@ -10,7 +11,8 @@ impl Default for State {
         Self { 
             time: 0.0, 
             resolution: [0.0, 0.0], 
-            values: [0.5; 8] 
+            values: [0.5; 8],
+            shader_index: 0,
         }
     }
 }
@@ -20,6 +22,7 @@ pub enum Message {
     SetResolution(f32, f32),
     SetValue(usize, f64),
     MidiInput(MidiMessage),
+    SetShaderIndex(usize),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
