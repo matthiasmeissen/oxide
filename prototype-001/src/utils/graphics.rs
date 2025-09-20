@@ -75,11 +75,15 @@ impl Stage {
             BufferSource::slice(&indices)
         );
 
-        // Handle shader selection
-        let shader_paths = vec![
-            "src/shaders/shader-01.glsl".to_string(),
-            "src/shaders/shader-02.glsl".to_string(),
-        ];
+        // Load shaders from directory
+        let shader_paths = load_shaders_from_dir(std::path::Path::new("src/shaders"))
+            .expect("Failed to load shaders from 'src/shaders' directory.");
+
+        if shader_paths.is_empty() {
+            panic!("No files found in 'src/shaders'.");
+        }
+        
+        println!("Loaded shaders: {:?}", shader_paths);
 
         let current_shader_index = 0;
         let initial_shader_source = std::fs::read_to_string(&shader_paths[current_shader_index])
@@ -294,4 +298,23 @@ fn shader_meta() -> ShaderMeta {
 fn load_shader(path: &str) -> String {
     fs::read_to_string(path)
     .expect(&format!("Failed to read shader: {path}"))
+}
+
+fn load_shaders_from_dir(dir_path: &std::path::Path) -> std::io::Result<Vec<String>> {
+    let mut shader_paths = vec![];
+
+    for entry in std::fs::read_dir(dir_path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_file() {
+            if let Some(path_str) = path.to_str() {
+                shader_paths.push(path_str.to_string());
+            }
+        }
+    };
+
+    shader_paths.sort();
+
+    Ok(shader_paths)
 }
