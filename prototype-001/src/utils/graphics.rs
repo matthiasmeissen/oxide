@@ -26,6 +26,7 @@ struct Stage {
     sender: Sender<Message>,
     reader: Output<State>,
     mq_resolution: [f32; 2],
+    is_fullscreen: bool,
 }
 
 impl Stage {
@@ -108,6 +109,7 @@ impl Stage {
             sender,
             reader,
             mq_resolution: [960.0, 540.0],
+            is_fullscreen: false,
         }
     }
 }
@@ -171,6 +173,10 @@ impl EventHandler for Stage {
             KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
             KeyCode::Key3 => {self.sender.try_send(Message::SetValue(6, 1.0)).ok();},
             KeyCode::Key4 => {self.sender.try_send(Message::SetValue(7, 1.0)).ok();},
+            KeyCode::F => {
+                self.is_fullscreen = !self.is_fullscreen;
+                window::set_fullscreen(self.is_fullscreen);
+            }
             _ => (),
         }
     }
