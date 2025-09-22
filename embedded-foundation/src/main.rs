@@ -1,5 +1,5 @@
 
-use embedded_graphics::{pixelcolor::BinaryColor, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Triangle}, *};
+use embedded_graphics::{pixelcolor::{raw::RawU32, BinaryColor}, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, *};
 use embedded_graphics_simulator::*;
 
 // To run the simulator run this command in the terminal
@@ -21,6 +21,8 @@ fn main() -> Result<(), std::convert::Infallible> {
         .stroke_alignment(primitives::StrokeAlignment::Inside)
         .build();
 
+    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
+
     display.bounding_box().into_styled(stroke2).draw(&mut display)?;
 
     Triangle::new(
@@ -28,6 +30,10 @@ fn main() -> Result<(), std::convert::Infallible> {
         Point::new(xoffset, yoffset + unit), 
         Point::new(xoffset + unit, yoffset + unit)
     ).into_styled(stroke1).draw(&mut display)?;
+
+    Rectangle::new(Point::new(xoffset + 2 * unit, yoffset), Size::new(unit as u32, unit as u32))
+        .into_styled(fill)
+        .draw(&mut display)?;
 
     let output_settings = OutputSettingsBuilder::new()
         .theme(BinaryColorTheme::OledWhite)
