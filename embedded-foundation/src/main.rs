@@ -1,6 +1,7 @@
 
-use embedded_graphics::{pixelcolor::{raw::RawU32, BinaryColor}, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, *};
+use embedded_graphics::{image::Image, pixelcolor::{raw::RawU32, BinaryColor, Rgb565}, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, *};
 use embedded_graphics_simulator::*;
+use tinybmp::*;
 
 // To run the simulator run this command in the terminal
 // export LIBRARY_PATH="$LIBRARY_PATH:$(brew --prefix)/lib"
@@ -31,9 +32,14 @@ fn main() -> Result<(), std::convert::Infallible> {
         Point::new(xoffset + unit, yoffset + unit)
     ).into_styled(stroke1).draw(&mut display)?;
 
-    Rectangle::new(Point::new(xoffset + 2 * unit, yoffset), Size::new(unit as u32, unit as u32))
+    Rectangle::new(Point::new(xoffset + 2 * unit - 2, yoffset), Size::new(unit as u32, unit as u32))
         .into_styled(fill)
         .draw(&mut display)?;
+
+    let button_data = include_bytes!("../assets/button-default.bmp");
+    let button = Bmp::from_slice(button_data).unwrap();
+
+    Image::new(&button, Point::new(xoffset + 3 * unit, yoffset)).draw(&mut display)?;
 
     let output_settings = OutputSettingsBuilder::new()
         .theme(BinaryColorTheme::OledWhite)
