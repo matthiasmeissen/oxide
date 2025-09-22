@@ -1,5 +1,10 @@
 // Simple button reading on ESP32
 
+// Instructions
+// This uses and ESP32 V4 Dev Board
+// Install the esp32 by Espressif Systems Library
+// Use the ESP32 Dev Module to send code
+
 #define BUTTON_PIN 2  // GPIO2
 
 void setup() {
