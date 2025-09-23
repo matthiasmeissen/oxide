@@ -1,6 +1,8 @@
 
 mod screens;
+mod state;
 use screens::*;
+use state::*;
 
 use embedded_graphics::{
     pixelcolor::{BinaryColor}, 
@@ -19,6 +21,8 @@ use std::time::Duration;
 fn main() -> Result<(), std::convert::Infallible> {
     println!("Embedded Foundation");
 
+    let mut state = PlaceholderState::new();
+
     let mut display: SimulatorDisplay<BinaryColor> = SimulatorDisplay::new(Size::new(128, 64));
     let output_settings = OutputSettingsBuilder::new()
         .theme(BinaryColorTheme::OledWhite)
@@ -26,18 +30,16 @@ fn main() -> Result<(), std::convert::Infallible> {
 
     let mut window = Window::new("Window Title", &output_settings);
 
-    let mut par = 0.0;
-
     'running: loop {
         display.clear(BinaryColor::Off)?;
-        draw_basic_screen(&mut display, par)?;
+        draw_basic_screen(&mut display, &state)?;
         window.update(&display);
 
         if window.events().any(|e| e == SimulatorEvent::Quit) {
             break 'running Ok(());
         }
 
-        par = (par + 0.01) % 1.0;
+        state.update_time(0.01);
 
         thread::sleep(Duration::from_millis(100));
     }

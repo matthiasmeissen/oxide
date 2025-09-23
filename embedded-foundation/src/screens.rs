@@ -1,11 +1,13 @@
 
+use crate::state::*;
+
 use embedded_graphics::{
     image::Image, mono_font::{ascii::FONT_4X6, MonoTextStyle}, pixelcolor::BinaryColor, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, text::{Text, TextStyleBuilder}, *
 };
 use embedded_graphics_simulator::*;
 use tinybmp::*;
 
-pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, par: f32) -> Result<(), std::convert::Infallible> {
+pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
     let (xoff, yoff, base) = (16, 16, 16);
 
     // Styles
@@ -53,7 +55,7 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, par: f32) 
         text_style)
         .draw(display)?;
 
-    let text = format!("{:.2}", par);
+    let text = format!("{:.2}", state.time);
         Text::with_text_style(
             &text,
             Point::new(xoff * 5 + 2, yoff),
