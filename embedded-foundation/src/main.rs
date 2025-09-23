@@ -32,7 +32,10 @@ fn main() -> Result<(), std::convert::Infallible> {
 
     'running: loop {
         display.clear(BinaryColor::Off)?;
-        draw_basic_screen(&mut display, &state)?;
+        
+        //draw_basic_screen(&mut display, &state)?;
+        draw_elektron_test(&mut display, &state)?;
+
         window.update(&display);
 
         if window.events().any(|e| e == SimulatorEvent::Quit) {

@@ -43,7 +43,7 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &Pl
         .into_styled(fill)
         .draw(display)?;
 
-    let button_data = include_bytes!("../assets/button-default.bmp");
+    let button_data = include_bytes!("../assets/button/button-default.bmp");
     let button = Bmp::from_slice(button_data).unwrap();
 
     Image::new(&button, Point::new(xoff + 3 * base, yoff)).draw(display)?;
@@ -63,6 +63,21 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &Pl
             text_style,
         )
         .draw(display)?;
+
+    Ok(())
+}
+
+
+pub fn draw_elektron_test(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
+    let (base, xoff, yoff) = (25, 16, 8);
+
+    let knob_data = include_bytes!("../assets/elektron-test/elektron-test-knob.bmp");
+    let knob = Bmp::from_slice(knob_data).unwrap();
+    Image::new(&knob, Point::new(xoff, yoff)).draw(display)?;
+
+    let wave_data = include_bytes!("../assets/elektron-test/elektron-test-wave.bmp");
+    let wave = Bmp::from_slice(wave_data).unwrap();
+    Image::new(&wave, Point::new(xoff + base, yoff)).draw(display)?;
 
     Ok(())
 }
