@@ -1,16 +1,14 @@
 
 use embedded_graphics::{
-    image::Image, 
-    pixelcolor::{raw::RawU32, BinaryColor, Rgb565}, 
-    prelude::{Dimensions, Point, Primitive, Size}, 
-    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, 
-    *
+    image::Image, mono_font::{ascii::FONT_4X6, MonoTextStyle}, pixelcolor::BinaryColor, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, text::{Text, TextStyleBuilder}, *
 };
 use embedded_graphics_simulator::*;
 use tinybmp::*;
 
-pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>) -> Result<(), std::convert::Infallible> {
+pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, par: f32) -> Result<(), std::convert::Infallible> {
     let (xoff, yoff, base) = (16, 16, 16);
+
+    // Styles
 
     let stroke1 = PrimitiveStyle::with_stroke(BinaryColor::On, 1);
 
@@ -22,6 +20,15 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>) -> Result<
 
     let fill = PrimitiveStyle::with_fill(BinaryColor::On);
 
+    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
+    let text_style = TextStyleBuilder::new()
+        .baseline(text::Baseline::Top)
+        .alignment(text::Alignment::Left)
+        .build();
+
+    
+    // Shapes
+    
     display.bounding_box().into_styled(stroke2).draw(display)?;
 
     Triangle::new(
@@ -38,6 +45,23 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>) -> Result<
     let button = Bmp::from_slice(button_data).unwrap();
 
     Image::new(&button, Point::new(xoff + 3 * base, yoff)).draw(display)?;
+
+    Text::with_text_style(
+        "Hello", 
+        Point::new(xoff * 5 * base + 2, yoff), 
+        character_style, 
+        text_style)
+        .draw(display)?;
+
+    let text = format!("{:.2}", par);
+        Text::with_text_style(
+            &text,
+            Point::new(xoff * 5 + 2, yoff),
+            character_style,
+            text_style,
+        )
+        .draw(display)?;
+
     Ok(())
 }
 

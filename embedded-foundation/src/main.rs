@@ -26,14 +26,18 @@ fn main() -> Result<(), std::convert::Infallible> {
 
     let mut window = Window::new("Window Title", &output_settings);
 
+    let mut par = 0.0;
+
     'running: loop {
         display.clear(BinaryColor::Off)?;
-        draw_basic_screen(&mut display)?;
+        draw_basic_screen(&mut display, par)?;
         window.update(&display);
 
         if window.events().any(|e| e == SimulatorEvent::Quit) {
             break 'running Ok(());
         }
+
+        par = (par + 0.01) % 1.0;
 
         thread::sleep(Duration::from_millis(100));
     }
