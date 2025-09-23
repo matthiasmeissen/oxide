@@ -34,7 +34,8 @@ fn main() -> Result<(), std::convert::Infallible> {
         display.clear(BinaryColor::Off)?;
         
         //draw_basic_screen(&mut display, &state)?;
-        draw_elektron_test(&mut display, &state)?;
+        //draw_elektron_test(&mut display, &state)?;
+        draw_elektron_template(&mut display, &state)?;
 
         window.update(&display);
 

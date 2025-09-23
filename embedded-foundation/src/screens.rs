@@ -82,3 +82,9 @@ pub fn draw_elektron_test(display: &mut SimulatorDisplay<BinaryColor>, state: &P
     Ok(())
 }
 
+pub fn draw_elektron_template(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
+    let image_data = include_bytes!("../assets/elektron-test/elektron-template-001.bmp");
+    let image = Bmp::from_slice(image_data).unwrap();
+    Image::new(&image, Point::new(0, 0)).draw(display)?;
+    Ok(())
+}
