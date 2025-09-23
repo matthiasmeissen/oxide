@@ -1,0 +1,43 @@
+
+use embedded_graphics::{
+    image::Image, 
+    pixelcolor::{raw::RawU32, BinaryColor, Rgb565}, 
+    prelude::{Dimensions, Point, Primitive, Size}, 
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, 
+    *
+};
+use embedded_graphics_simulator::*;
+use tinybmp::*;
+
+pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>) -> Result<(), std::convert::Infallible> {
+    let (xoff, yoff, base) = (16, 16, 16);
+
+    let stroke1 = PrimitiveStyle::with_stroke(BinaryColor::On, 1);
+
+    let stroke2 = PrimitiveStyleBuilder::new()
+        .stroke_color(BinaryColor::On)
+        .stroke_width(2)
+        .stroke_alignment(primitives::StrokeAlignment::Inside)
+        .build();
+
+    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
+
+    display.bounding_box().into_styled(stroke2).draw(display)?;
+
+    Triangle::new(
+        Point::new(xoff, yoff), 
+        Point::new(xoff, yoff + base), 
+        Point::new(xoff + base, yoff + base)
+    ).into_styled(stroke1).draw(display)?;
+
+    Rectangle::new(Point::new(xoff + 2 * base - 2, yoff), Size::new(base as u32, base as u32))
+        .into_styled(fill)
+        .draw(display)?;
+
+    let button_data = include_bytes!("../assets/button-default.bmp");
+    let button = Bmp::from_slice(button_data).unwrap();
+
+    Image::new(&button, Point::new(xoff + 3 * base, yoff)).draw(display)?;
+    Ok(())
+}
+
