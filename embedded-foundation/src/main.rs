@@ -4,19 +4,23 @@ use embedded_graphics::{
     primitives::{Line, PrimitiveStyle},
 };
 use linux_embedded_hal::I2cdev;
-use sh1106::{prelude::*, Sh1106};
+
+// --- THE FIX IS HERE ---
+// We must explicitly import `I2CDisplayInterface` from the `sh1106` crate.
+use sh1106::{prelude::*, I2CDisplayInterface, Sh1106};
 
 fn main() {
     // I2C setup is exactly the same
     let i2c = I2cdev::new("/dev/i2c-1").expect("Failed to open I2C device");
+
+    // Now the compiler knows what `I2CDisplayInterface` is.
     let interface = I2CDisplayInterface::new(i2c);
 
-    // --- CHANGE 2: Create an Sh1106 driver instance ---
-    // The arguments are the same (interface, size, rotation).
+    // Create an Sh1106 driver instance
     let mut display = Sh1106::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
         .into_buffered_graphics_mode();
 
-    // The rest of the code is IDENTICAL because both drivers use embedded-graphics!
+    // The rest of the code remains the same
     display.init().expect("Failed to initialize display");
 
     display.clear(BinaryColor::Off).expect("Clear failed");
