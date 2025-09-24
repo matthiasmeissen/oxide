@@ -41,7 +41,7 @@ fn main() -> Result<(), std::convert::Infallible> {
             1 => draw_basic_screen(&mut display, &state)?,
             2 => draw_elektron_test(&mut display, &state)?,
             3 => draw_elektron_template(&mut display, &state)?,
-            4 => draw_bars(&mut display, &state)?,
+            4 => draw_screen(&mut display, &state)?,
             _ => ()
         }
 
