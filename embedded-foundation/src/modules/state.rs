@@ -1,4 +1,4 @@
-
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PlaceholderState {
     pub time: f64,
     pub resolution: [f32; 2],
@@ -26,4 +26,19 @@ impl PlaceholderState {
         self.values[2] = (self.time * 0.4) % 1.0;
         self.values[3] = (self.time * 1.8) % 1.0;
     }
+}
+
+pub enum Message {
+    SetTime(f64),
+    SetResolution(f32, f32),
+    SetValue(usize, f64),
+    MidiInput(MidiMessage),
+    SetShaderIndex(usize),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MidiMessage {
+    NoteOn { note: u8, velocity: u8 },
+    NoteOff { note: u8 },
+    ControlChange { controller: u8, value: u8 },
 }
