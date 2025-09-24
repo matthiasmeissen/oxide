@@ -91,13 +91,13 @@ pub fn draw_elektron_template(display: &mut SimulatorDisplay<BinaryColor>, state
 }
 
 pub fn draw_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
-    draw_bar(display, Point::new(19, 13), state.time as f32, "CV1")?;
+    draw_bar(display, Point::new(19, 13), state.values[0] as f32, "CV1")?;
 
-    draw_bar(display, Point::new(19 + (23 + 4), 13), state.time as f32, "CV2")?;
+    draw_bar(display, Point::new(19 + (23 + 4), 13), state.values[1] as f32, "CV2")?;
 
-    draw_bar(display, Point::new(19 + (23 + 4) * 2, 13), state.time as f32, "CV3")?;
+    draw_bar(display, Point::new(19 + (23 + 4) * 2, 13), state.values[2] as f32, "CV3")?;
 
-    draw_bar(display, Point::new(19 + (23 + 4) * 3, 13), state.time as f32, "CV3")?;
+    draw_bar(display, Point::new(19 + (23 + 4) * 3, 13), state.values[3] as f32, "CV3")?;
 
     Ok(())
 }

@@ -52,6 +52,7 @@ fn main() -> Result<(), std::convert::Infallible> {
         }
 
         state.update_time(0.01);
+        state.update_values();
 
         thread::sleep(Duration::from_millis(100));
     }
