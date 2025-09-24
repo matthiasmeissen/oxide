@@ -1,29 +1,38 @@
-
-mod modules;
-use modules::{
-    display::*,
-    coordinator::*,
-    midi::*,
+use embedded_graphics::{
+    pixelcolor::BinaryColor,
+    prelude::*,
+    primitives::{Line, PrimitiveStyle},
 };
-
-use crossbeam_channel;
-use triple_buffer::TripleBuffer;
-
-use crate::modules::state::PlaceholderState;
-
-// To run the simulator run this command in the terminal
-// export LIBRARY_PATH="$LIBRARY_PATH:$(brew --prefix)/lib"
-// This will enable it for that session only
-
+use linux_embedded_hal::I2cdev;
+use sh1106::{prelude::*, Sh1106};
 
 fn main() {
-    println!("Embedded Foundation");
-    let (sender, receiver) = crossbeam_channel::bounded(5);
-    let (display_writer, display_reader) = TripleBuffer::new(&PlaceholderState::new()).split();
+    // I2C setup is exactly the same
+    let i2c = I2cdev::new("/dev/i2c-1").expect("Failed to open I2C device");
+    let interface = I2CDisplayInterface::new(i2c);
 
-    start_coordinator_thread(receiver, display_writer);
+    // --- CHANGE 2: Create an Sh1106 driver instance ---
+    // The arguments are the same (interface, size, rotation).
+    let mut display = Sh1106::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
 
-    start_midi_thread(sender.clone());
+    // The rest of the code is IDENTICAL because both drivers use embedded-graphics!
+    display.init().expect("Failed to initialize display");
 
-    start_display(display_reader).expect("Error starting display.");
+    display.clear(BinaryColor::Off).expect("Clear failed");
+
+    let line_style = PrimitiveStyle::with_stroke(BinaryColor::On, 1);
+    Line::new(Point::new(0, 0), Point::new(127, 63))
+        .into_styled(line_style)
+        .draw(&mut display)
+        .expect("Line draw failed");
+
+    display.flush().expect("Flush failed");
+
+    println!("Line should be visible on your SH1106 screen!");
+    println!("Program will now loop forever. Press Ctrl+C to exit.");
+
+    loop {
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
 }
