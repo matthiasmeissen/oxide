@@ -1,10 +1,8 @@
 
-mod screens;
-mod state;
-mod bmpdata;
+mod modules;
 
-use screens::*;
-use state::*;
+use modules::screens::*;
+use modules::state::*;
 
 use embedded_graphics::{
     pixelcolor::{BinaryColor}, 

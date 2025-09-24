@@ -1,6 +1,6 @@
 
-use crate::state::*;
-use crate::bmpdata::*;
+use crate::modules::state::*;
+use crate::modules::bmpdata::*;
 
 use embedded_graphics::{
     image::Image, mono_font::{ascii::FONT_4X6, MonoTextStyle}, pixelcolor::BinaryColor, prelude::{Dimensions, Point, Primitive, Size, DrawTarget}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, text::{Text, TextStyleBuilder}, *
@@ -44,7 +44,7 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &Pl
         .into_styled(fill)
         .draw(display)?;
 
-    let button_data = include_bytes!("../assets/button/button-default.bmp");
+    let button_data = include_bytes!("../../assets/button/button-default.bmp");
     let button = Bmp::from_slice(button_data).unwrap();
 
     Image::new(&button, Point::new(xoff + 3 * base, yoff)).draw(display)?;
@@ -72,11 +72,11 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &Pl
 pub fn draw_elektron_test(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
     let (base, xoff, yoff) = (25, 16, 8);
 
-    let knob_data = include_bytes!("../assets/elektron-test/elektron-test-knob.bmp");
+    let knob_data = include_bytes!("../../assets/elektron-test/elektron-test-knob.bmp");
     let knob = Bmp::from_slice(knob_data).unwrap();
     Image::new(&knob, Point::new(xoff, yoff)).draw(display)?;
 
-    let wave_data = include_bytes!("../assets/elektron-test/elektron-test-wave.bmp");
+    let wave_data = include_bytes!("../../assets/elektron-test/elektron-test-wave.bmp");
     let wave = Bmp::from_slice(wave_data).unwrap();
     Image::new(&wave, Point::new(xoff + base, yoff)).draw(display)?;
 
@@ -84,7 +84,7 @@ pub fn draw_elektron_test(display: &mut SimulatorDisplay<BinaryColor>, state: &P
 }
 
 pub fn draw_elektron_template(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
-    let image_data = include_bytes!("../assets/elektron-test/elektron-template-001.bmp");
+    let image_data = include_bytes!("../../assets/elektron-test/elektron-template-001.bmp");
     let image = Bmp::from_slice(image_data).unwrap();
     Image::new(&image, Point::new(0, 0)).draw(display)?;
     Ok(())
