@@ -1,0 +1,15 @@
+[package]
+name = "oled-test"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+embedded-graphics = "0.8"
+sh1106 = "0.5"
+
+# Modern display interface crates
+display-interface = "0.5"
+display-interface-i2c = "0.5"
+
+# The simple, modern I²C library for Linux
+linux-embedded-hal = "0.4"
