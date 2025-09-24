@@ -1,6 +1,8 @@
 
 mod screens;
 mod state;
+mod bmpdata;
+
 use screens::*;
 use state::*;
 
@@ -32,10 +34,16 @@ fn main() -> Result<(), std::convert::Infallible> {
 
     'running: loop {
         display.clear(BinaryColor::Off)?;
-        
-        //draw_basic_screen(&mut display, &state)?;
-        //draw_elektron_test(&mut display, &state)?;
-        draw_elektron_template(&mut display, &state)?;
+
+        let screen: usize = 4;
+
+        match screen {
+            1 => draw_basic_screen(&mut display, &state)?,
+            2 => draw_elektron_test(&mut display, &state)?,
+            3 => draw_elektron_template(&mut display, &state)?,
+            4 => draw_bars(&mut display, &state)?,
+            _ => ()
+        }
 
         window.update(&display);
 

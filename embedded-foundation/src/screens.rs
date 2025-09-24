@@ -1,5 +1,6 @@
 
 use crate::state::*;
+use crate::bmpdata::*;
 
 use embedded_graphics::{
     image::Image, mono_font::{ascii::FONT_4X6, MonoTextStyle}, pixelcolor::BinaryColor, prelude::{Dimensions, Point, Primitive, Size}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Triangle}, text::{Text, TextStyleBuilder}, *
@@ -56,13 +57,13 @@ pub fn draw_basic_screen(display: &mut SimulatorDisplay<BinaryColor>, state: &Pl
         .draw(display)?;
 
     let text = format!("{:.2}", state.time);
-        Text::with_text_style(
-            &text,
-            Point::new(xoff * 5 + 2, yoff),
-            character_style,
-            text_style,
-        )
-        .draw(display)?;
+    Text::with_text_style(
+        &text,
+        Point::new(xoff * 5 + 2, yoff),
+        character_style,
+        text_style,
+    )
+    .draw(display)?;
 
     Ok(())
 }
@@ -87,4 +88,39 @@ pub fn draw_elektron_template(display: &mut SimulatorDisplay<BinaryColor>, state
     let image = Bmp::from_slice(image_data).unwrap();
     Image::new(&image, Point::new(0, 0)).draw(display)?;
     Ok(())
+}
+
+pub fn draw_bars(display: &mut SimulatorDisplay<BinaryColor>, state: &PlaceholderState) -> Result<(), std::convert::Infallible> {
+    // Styles
+    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
+    let text_style = TextStyleBuilder::new()
+        .baseline(text::Baseline::Top)
+        .alignment(text::Alignment::Center)
+        .build();
+    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
+
+    // Label
+    Text::with_text_style("CV1",Point::new(11, 0), character_style,text_style,)
+        .draw(display)?;
+
+    // Base
+    let base = Bmp::from_slice(RANGE12BASE).unwrap();
+    Image::new(&base, Point::new(0, 7)).draw(display)?;
+
+    // Bar
+    let top = lerp(41.0, 9.0, state.time as f32) as i32;
+    Rectangle::with_corners(Point { x: 9, y: top }, Point { x: 13, y: 41 })
+        .into_styled(fill)
+        .draw(display)?;
+
+    // Value
+    let text = format!("{:.2}", state.time);
+    Text::with_text_style(&text,Point::new(11, 46), character_style,text_style,)
+        .draw(display)?;
+
+    Ok(())
+}
+
+fn lerp(min: f32, max: f32, val: f32) -> f32 {
+    min * (1.0 - val) + max * val
 }
