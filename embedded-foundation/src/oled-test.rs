@@ -1,70 +1,53 @@
-use std::error::Error;
-use std::thread;
-use std::time::Duration;
-
 use embedded_graphics::{
-    mono_font::{ascii::FONT_6X10, MonoTextStyle},
     pixelcolor::BinaryColor,
     prelude::*,
-    primitives::{Circle, Line, PrimitiveStyle, Rectangle},
-    text::Text,
+    primitives::{Line, PrimitiveStyle},
 };
 use linux_embedded_hal::I2cdev;
 use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // Initialize I2C
-    let i2c = I2cdev::new("/dev/i2c-1")?;
-    
-    // Initialize display interface
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // --- 1. SET UP THE DISPLAY ---
+
+    // Initialize a connection to the I2C bus on the Raspberry Pi.
+    // "/dev/i2c-1" is the standard I2C bus for the GPIO pins.
+    let i2c = I2cdev::new("/dev/i2c-1").expect("Failed to open I2C device");
+
+    // Create an interface to the display.
     let interface = I2CDisplayInterface::new(i2c);
-    
-    // Initialize display driver
+
+    // Create a driver instance for an SSD1306 display with a size of 128x64 pixels.
     let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
         .into_buffered_graphics_mode();
-    
-    // Initialize the display
-    display.init()?;
-    
-    // Clear the display
-    display.clear();
-    
-    // Create a text style
-    let text_style = MonoTextStyle::new(&FONT_6X10, BinaryColor::On);
-    
-    // Draw some text
-    Text::new("Hello, Pi 5!", Point::new(10, 20), text_style)
-        .draw(&mut display)?;
-    
-    Text::new("Rust + OLED", Point::new(10, 35), text_style)
-        .draw(&mut display)?;
-    
-    // Draw some shapes
+
+    // Initialize the display driver. This will send initialization commands to the screen.
+    display.init().expect("Failed to initialize display");
+
+    // --- 2. DRAW ON THE DISPLAY ---
+
+    // First, clear the display's internal buffer of any old data.
+    display.clear(BinaryColor::Off)?;
+
+    // Define the style for our line: a 1-pixel wide, white line.
     let line_style = PrimitiveStyle::with_stroke(BinaryColor::On, 1);
-    let fill_style = PrimitiveStyle::with_fill(BinaryColor::On);
-    
-    // Draw a line
-    Line::new(Point::new(0, 50), Point::new(127, 50))
+
+    // Create a line from the top-left corner (0,0) to the bottom-right (127, 63).
+    Line::new(Point::new(0, 0), Point::new(127, 63))
         .into_styled(line_style)
-        .draw(&mut display)?;
-    
-    // Draw a rectangle
-    Rectangle::new(Point::new(100, 10), Size::new(20, 15))
-        .into_styled(line_style)
-        .draw(&mut display)?;
-    
-    // Draw a filled circle
-    Circle::new(Point::new(5, 5), 8)
-        .into_styled(fill_style)
-        .draw(&mut display)?;
-    
-    // Send buffer to display
+        .draw(&mut display)?; // Draw the line into the display's buffer.
+
+    // --- 3. SHOW THE DRAWING ---
+
+    // Flush the buffer to the display.
+    // This sends the data from the Pi's memory to the screen's memory.
     display.flush()?;
-    
-    println!("Display updated! Press Ctrl+C to exit.");
-    
-    // Keep the program running
+
+    println!("Line should be visible on the OLED screen.");
+    println!("Program will now loop forever. Press Ctrl+C to exit.");
+
+    // Loop forever to keep the image on the screen.
+    // If the program exits, the screen will likely go blank.
     loop {
-        thread::sleep(Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_millis(500));
     }
 }
