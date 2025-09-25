@@ -1,5 +1,7 @@
 #![cfg(target_os = "linux")]
 
+use crate::modules::state::*;
+
 use embedded_graphics::{
     image::Image,
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -35,10 +37,10 @@ pub fn start_display(mut display_reader: Output<PlaceholderState>) {
 
         display.clear();
 
-        draw_bar(display, Point::new(19, 13), state.values[0] as f32, "CV1")?;
-        draw_bar(display, Point::new(19 + 27, 13), state.values[1] as f32, "CV2")?;
-        draw_bar(display, Point::new(19 + 27 * 2, 13), state.values[2] as f32, "CV3")?;
-        draw_bar(display, Point::new(19 + 27 * 3, 13), state.values[3] as f32, "CV4")?;
+        draw_range(&mut display, Point::new(19, 13), state.values[0] as f32, "CV1");
+        draw_range(&mut display, Point::new(19 + 27, 13), state.values[1] as f32, "CV2");
+        draw_range(&mut display, Point::new(19 + 27 * 2, 13), state.values[2] as f32, "CV3");
+        draw_range(&mut display, Point::new(19 + 27 * 3, 13), state.values[3] as f32, "CV4");
     
         display.flush().unwrap();
 
