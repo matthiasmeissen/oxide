@@ -30,20 +30,19 @@ pub fn start_display(mut display_reader: Output<PlaceholderState>) {
     display.init().unwrap();
     display.flush().unwrap();
 
-    let mut num = 0.0;
-
     loop {
         let state = display_reader.read();
 
         display.clear();
 
-        draw_range(&mut display, Point::new(0, 0), state.time, "CV1");
-
-        num = (num + 0.1) % 1.0;
+        draw_bar(display, Point::new(19, 13), state.values[0] as f32, "CV1")?;
+        draw_bar(display, Point::new(19 + 27, 13), state.values[1] as f32, "CV2")?;
+        draw_bar(display, Point::new(19 + 27 * 2, 13), state.values[2] as f32, "CV3")?;
+        draw_bar(display, Point::new(19 + 27 * 3, 13), state.values[3] as f32, "CV4")?;
     
         display.flush().unwrap();
 
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(40));
     }
 
 }
@@ -59,7 +58,7 @@ pub fn draw_range(display: &mut GraphicsMode<I2cInterface<I2cdev>>, position: Po
         .baseline(embedded_graphics::text::Baseline::Top)
         .alignment(embedded_graphics::text::Alignment::Center)
         .build();
-    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
+    let fill: PrimitiveStyle<BinaryColor> = PrimitiveStyle::with_fill(BinaryColor::On);
 
     // Label
     Text::with_text_style(label, position + LABEL_POS, character_style, text_style)

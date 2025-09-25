@@ -19,5 +19,5 @@ fn main() {
     start_midi_thread(sender.clone());
 
     #[cfg(target_os = "linux")]
-    start_display();
+    start_display(display_reader);
 }
