@@ -1,9 +1,12 @@
 
 use embedded_graphics::{
-    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
+    image::Image,
+    mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::BinaryColor,
-    prelude::*,
-    text::{Baseline, Text},
+    prelude::{DrawTarget, Point},
+    primitives::{PrimitiveStyle, Rectangle},
+    text::{Text, TextStyleBuilder},
+    Drawable,
 };
 
 use sh1106::{prelude::*, Builder};
@@ -11,6 +14,8 @@ use linux_embedded_hal::I2cdev;
 
 use std::thread;
 use std::time::Duration;
+
+pub const RANGE12BASE: &'static [u8] = include_bytes!("../assets/range-12-base.bmp");
 
 fn main() {
     let mut i2c = I2cdev::new("/dev/i2c-1").unwrap();
@@ -30,7 +35,7 @@ fn start_display(i2c_address: I2cdev) {
     loop {
         display.clear();
 
-        draw_text(&mut display, num);
+        draw_range(&mut display, Point::new(0, 0), 0.2, "CV1");
 
         num += 0.1;
     
@@ -41,14 +46,45 @@ fn start_display(i2c_address: I2cdev) {
 
 }
 
-fn draw_text(display: &mut GraphicsMode<I2cInterface<I2cdev>>, num: f64) {
-    let text_style = MonoTextStyleBuilder::new()
-        .font(&FONT_6X10)
-        .text_color(BinaryColor::On)
-        .build();
+fn draw_range(display: &mut GraphicsMode<I2cInterface<I2cdev>>, position: Point, val: f32, label: &str) {
+    const BAR_TOP_LEFT: Point = Point::new(9, 9);
+    const BAR_BOTTOM_RIGHT: Point = Point::new(13, 41);
+    const LABEL_POS: Point = Point::new(11, 0);
+    const VALUE_POS: Point = Point::new(11, 46);
 
-    let text = format!("{num}");
-    Text::with_baseline(&text, Point::new(0, 16), text_style, Baseline::Top)
-        .draw(display)
-        .unwrap();
+    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
+    let text_style = TextStyleBuilder::new()
+        .baseline(embedded_graphics::text::Baseline::Top)
+        .alignment(embedded_graphics::text::Alignment::Center)
+        .build();
+    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
+
+    // Label
+    Text::with_text_style(label, position + LABEL_POS, character_style, text_style)
+        .draw(display).unwrap();
+
+    // Base
+    let base = Bmp::from_slice(RANGE12BASE).unwrap();
+    Image::new(&base, Point::new(position.x, position.y + 7)).draw(display).unwrap();
+
+    // Bar
+    let bar_y_max = position.y + BAR_TOP_LEFT.y;
+    let bar_y_min = position.y + BAR_BOTTOM_RIGHT.y;
+
+    let top = lerp(bar_y_min as f32, bar_y_max as f32, val.clamp(0.0, 1.0)) as i32;
+    let bar_top_left = position + BAR_TOP_LEFT;
+    let bar_bottom_right = position + BAR_BOTTOM_RIGHT;
+
+    Rectangle::with_corners(Point::new(bar_top_left.x, top), bar_bottom_right)
+        .into_styled(fill)
+        .draw(display).unwrap();
+
+    // Value
+    let text = format!("{:.2}", val);
+    Text::with_text_style(&text, position + VALUE_POS, character_style, text_style)
+        .draw(display).unwrap();
+}
+
+fn lerp(min: f32, max: f32, val: f32) -> f32 {
+    min * (1.0 - val) + max * val
 }
