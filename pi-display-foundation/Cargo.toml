@@ -1,0 +1,9 @@
+[package]
+name = "pi-display-foundation"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sh1106 = "0.5.0"
+linux-embedded-hal = "0.3.0"
+embedded-graphics = "0.8.0"
