@@ -24,7 +24,8 @@ pub fn start_display(mut display_reader: Output<PlaceholderState>) -> Result<(),
 
         display.clear(BinaryColor::Off)?;
 
-        draw_screen(&mut display, &state)?;
+        //draw_screen(&mut display, &state)?;
+        draw_preview_screen(&mut display, &state)?;
 
         window.update(&display);
 

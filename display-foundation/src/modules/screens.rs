@@ -27,6 +27,16 @@ where
     Ok(())
 }
 
+pub fn draw_preview_screen<T>(display: &mut T, state: &PlaceholderState) -> Result<(), T::Error>
+where
+    T: DrawTarget<Color = BinaryColor>,
+{
+    let image = Bmp::from_slice(SCREEN001).unwrap();
+    Image::new(&image, Point::new(0, 0)).draw(display)?;
+
+    Ok(())
+}
+
 pub fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
