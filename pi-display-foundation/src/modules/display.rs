@@ -14,12 +14,14 @@ use tinybmp::Bmp;
 use sh1106::{prelude::*, Builder};
 use linux_embedded_hal::I2cdev;
 
+use triple_buffer::*;
+
 use std::thread;
 use std::time::Duration;
 
 const RANGE12BASE: &'static [u8] = include_bytes!("../../assets/range-12-base.bmp");
 
-pub fn start_display() {
+pub fn start_display(mut display_reader: Output<PlaceholderState>) {
     let mut i2c = I2cdev::new("/dev/i2c-1").unwrap();
     i2c.set_slave_address(0x3C).unwrap();
 
@@ -31,9 +33,11 @@ pub fn start_display() {
     let mut num = 0.0;
 
     loop {
+        let state = display_reader.read();
+
         display.clear();
 
-        draw_range(&mut display, Point::new(0, 0), num, "CV1");
+        draw_range(&mut display, Point::new(0, 0), state.time, "CV1");
 
         num = (num + 0.1) % 1.0;
     
