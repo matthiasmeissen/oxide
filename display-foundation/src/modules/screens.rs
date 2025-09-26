@@ -41,8 +41,9 @@ where
     draw_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3")?;
     draw_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4")?;
 
-    draw_shader_frame(display, Point::new(0, 0), 1)?;
-    draw_graphic_sprite(display, Point::new(1, 10), 0.2)?;
+    draw_shader_frame(display, Point::new(0, 0), state.shader_index)?;
+
+    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32)?;
 
     Ok(())
 }

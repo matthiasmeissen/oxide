@@ -42,11 +42,25 @@ pub fn start_coordinator_thread(receiver: Receiver<Message>,  mut display_writer
                         println!("{:?}", current_state);
                     }
                     MidiMessage::NoteOn { note, velocity } => {
+                        // From Novation
+                        if note == 73 { current_state.values[4] = 1.0 }
+                        if note == 74 { current_state.values[5] = 1.0 }
+                        if note == 75 { current_state.values[6] = 1.0 }
+                        if note == 76 { current_state.values[7] = 1.0 }
+                        if note == 41 { current_state.shader_index = 1 }
+                        if note == 42 { current_state.shader_index = 2 }
+
                         // From OP-Z
                         if note == 53 { current_state.values[4] = 1.0 }
                         if note == 54 { current_state.shader_index += 1 }
                     }
                     MidiMessage::NoteOff { note } => {
+                        // From Novation
+                        if note == 73 { current_state.values[4] = 0.0 }
+                        if note == 74 { current_state.values[5] = 0.0 }
+                        if note == 75 { current_state.values[6] = 0.0 }
+                        if note == 76 { current_state.values[7] = 0.0 }
+
                         // From OP-Z
                         if note == 53 { current_state.values[4] = 0.0 }
                     }
