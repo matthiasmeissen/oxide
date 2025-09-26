@@ -1,9 +1,9 @@
-// screens.rs
 
-use crate::modules::bmpdata::*;
 use crate::modules::state::*;
 
-use embedded_graphics::prelude::Primitive;
+use embedded_graphics::image::ImageDrawableExt;
+use embedded_graphics::prelude::{Primitive, Size};
+use embedded_graphics::text::LineHeight;
 use embedded_graphics::{
     image::Image,
     mono_font::{ascii::FONT_4X6, MonoTextStyle},
@@ -14,6 +14,17 @@ use embedded_graphics::{
     Drawable,
 };
 use tinybmp::Bmp;
+
+// Convert Spritesheets to correct format
+// ffmpeg -i sheet-test.bmp -pix_fmt bgr24 sheet-test-01.bmp  
+// ffmpeg -i sheet-test.bmp -frames:v 1 -pix_fmt bgr24 sheet-test-01.bmp
+// Somehow this is needed
+
+const RANGE12: &'static [u8] = include_bytes!("../../assets/range-12/range-12.bmp");
+const RANGE12BASE: &'static [u8] = include_bytes!("../../assets/range-12/range-12-base.bmp");
+const SCREEN001: &'static [u8] = include_bytes!("../../assets/screen-001/screen-001.bmp");
+const SHEETTEST: &'static [u8] = include_bytes!("../../assets/screen-001/sheet-test.bmp");
+
 
 pub fn draw_screen<T>(display: &mut T, state: &PlaceholderState) -> Result<(), T::Error>
 where
@@ -31,13 +42,43 @@ pub fn draw_preview_screen<T>(display: &mut T, state: &PlaceholderState) -> Resu
 where
     T: DrawTarget<Color = BinaryColor>,
 {
-    let image = Bmp::from_slice(SCREEN001).unwrap();
+    let image = Bmp::from_slice(SHEETTEST).unwrap();
     Image::new(&image, Point::new(0, 0)).draw(display)?;
 
     Ok(())
 }
 
-pub fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str) -> Result<(), T::Error>
+pub fn draw_sprite<T>(display: &mut T, state: &PlaceholderState, num: f64) -> Result<(), T::Error>
+where
+    T: DrawTarget<Color = BinaryColor>,
+{
+
+    let index = (num % 4.0) as usize;
+    draw_sheet(display, Point::new(0, 0), index)?;
+
+    Ok(())
+}
+
+fn draw_sheet<T>(display: &mut T, position: Point, index: usize) -> Result<(), T::Error>
+where
+    T: DrawTarget<Color = BinaryColor>,
+{
+    let width: i32 = 18;
+    let height: i32 = 53;
+    let x_offset = index as i32 * width;
+
+    let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
+
+    let spritesheet_bmp = Bmp::from_slice(SHEETTEST).unwrap();
+
+    let image = spritesheet_bmp.sub_image(&area);
+
+    Image::new(&image, position).draw(display)?;
+
+    Ok(())
+}
+
+fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
 {

@@ -1,5 +1,8 @@
 
-use crate::modules::{state::*, screens::*};
+use crate::modules::{
+    state::*, 
+    screens::*
+};
 
 use embedded_graphics::{
     pixelcolor::{BinaryColor}, 
@@ -19,13 +22,18 @@ pub fn start_display(mut display_reader: Output<PlaceholderState>) -> Result<(),
 
     let mut window = Window::new("Window Title", &output_settings);
 
+    let mut num = 0.0;
+
     'running: loop {
         let state = display_reader.read();
 
         display.clear(BinaryColor::Off)?;
 
         //draw_screen(&mut display, &state)?;
-        draw_preview_screen(&mut display, &state)?;
+        //draw_preview_screen(&mut display, &state)?;
+        draw_sprite(&mut display, &state, num)?;
+
+        num += 0.1;
 
         window.update(&display);
 
@@ -36,3 +44,5 @@ pub fn start_display(mut display_reader: Output<PlaceholderState>) -> Result<(),
         thread::sleep(Duration::from_millis(40));
     }
 }
+
+
