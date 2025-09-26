@@ -3,6 +3,9 @@ mod modules;
 #[cfg(target_os = "linux")]
 use modules::display::*;
 
+#[cfg(not(target_os = "linux"))]
+use modules::display_simulator::*;
+
 use modules::{coordinator::*, midi::*};
 
 use crossbeam_channel;
@@ -19,5 +22,8 @@ fn main() {
     start_midi_thread(sender.clone());
 
     #[cfg(target_os = "linux")]
+    start_display(display_reader);
+
+    #[cfg(not(target_os = "linux"))]
     start_display(display_reader);
 }
