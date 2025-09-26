@@ -1,8 +1,6 @@
 
 use crate::modules::state::*;
 
-use std::fmt::Debug;
-
 use embedded_graphics::image::ImageDrawableExt;
 use embedded_graphics::prelude::{Primitive, Size};
 use embedded_graphics::{
@@ -27,33 +25,32 @@ const SHADERFRAME: &'static [u8] = include_bytes!("../../assets/screen-001/shade
 const GRAPHIC001: &'static [u8] = include_bytes!("../../assets/screen-001/graphic-001.bmp");
 
 
-pub fn draw_screen<T>(display: &mut T, state: &PlaceholderState)
+pub fn draw_screen<T>(display: &mut T, state: &PlaceholderState) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
 {
-    draw_trigger(display, Point::new(24, 1), state.values[4] as f32);
-    draw_trigger(display, Point::new(24 + 27, 1), state.values[5] as f32);
-    draw_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32);
-    draw_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32);
+    draw_trigger(display, Point::new(24, 1), state.values[4] as f32)?;
+    draw_trigger(display, Point::new(24 + 27, 1), state.values[5] as f32)?;
+    draw_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32)?;
+    draw_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32)?;
 
-    draw_rounded(display);
+    draw_rounded(display)?;
 
-    draw_bar(display, Point::new(24, 13), state.values[0] as f32, "CV1");
-    draw_bar(display, Point::new(24 + 27, 13), state.values[1] as f32, "CV2");
-    draw_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3");
-    draw_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4");
+    draw_bar(display, Point::new(24, 13), state.values[0] as f32, "CV1")?;
+    draw_bar(display, Point::new(24 + 27, 13), state.values[1] as f32, "CV2")?;
+    draw_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3")?;
+    draw_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4")?;
 
-    draw_shader_frame(display, Point::new(0, 0), state.shader_index);
+    draw_shader_frame(display, Point::new(0, 0), state.shader_index)?;
 
-    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
+    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32)?;
 
+    Ok(())
 }
 
-fn draw_graphic_sprite<T>(display: &mut T, position: Point, val: f32)
+fn draw_graphic_sprite<T>(display: &mut T, position: Point, val: f32) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
 {
     let num_items = 4;
     let index = (val * num_items as f32).floor() as usize;
@@ -65,13 +62,14 @@ where
     let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
     let spritesheet_bmp = Bmp::from_slice(GRAPHIC001).unwrap();
     let image = spritesheet_bmp.sub_image(&area);
-    Image::new(&image, position).draw(display).unwrap();
+    Image::new(&image, position).draw(display)?;
+
+    Ok(())
 }
 
-fn draw_trigger<T>(display: &mut T, position: Point, val: f32)
+fn draw_trigger<T>(display: &mut T, position: Point, val: f32) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
 {
     let index = if val > 0.5 {
         1
@@ -86,13 +84,14 @@ where
     let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
     let spritesheet_bmp = Bmp::from_slice(TRIGGER01).unwrap();
     let image = spritesheet_bmp.sub_image(&area);
-    Image::new(&image, position).draw(display).unwrap();
+    Image::new(&image, position).draw(display)?;
+
+    Ok(())
 }
 
-fn draw_shader_frame<T>(display: &mut T, position: Point, index: usize)
+fn draw_shader_frame<T>(display: &mut T, position: Point, index: usize) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
 {
     let character_style = MonoTextStyle::new(&FONT_5X7, BinaryColor::Off);
     let text_style = TextStyleBuilder::new()
@@ -102,40 +101,42 @@ where
 
 
     let image = Bmp::from_slice(SHADERFRAME).unwrap();
-    Image::new(&image, position).draw(display).unwrap();
+    Image::new(&image, position).draw(display)?;
 
     let text = format!("S0{}", index);
     Text::with_text_style(&text, position + Point::new(10, 2), character_style, text_style)
-        .draw(display).unwrap();
+        .draw(display)?;
+
+    Ok(())
 }
 
-fn draw_rounded<T>(display: &mut T)
+fn draw_rounded<T>(display: &mut T) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
 {
     Line::new(Point::new(24, 0), Point::new(126, 0))
     .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
+    .draw(display)?;
 
     Line::new(Point::new(127, 1), Point::new(127, 8))
     .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
+    .draw(display)?;
 
     Line::new(Point::new(126, 9), Point::new(24, 9))
     .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
+    .draw(display)?;
 
     Line::new(Point::new(23, 8), Point::new(23, 1))
     .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
+    .draw(display)?;
+
+    Ok(())
 }
 
 
-fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str)
+fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str) -> Result<(), T::Error>
 where
     T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
 {
     const BAR_TOP_LEFT: Point = Point::new(9, 9);
     const BAR_BOTTOM_RIGHT: Point = Point::new(13, 41);
@@ -151,11 +152,11 @@ where
 
     // Label
     Text::with_text_style(label, position + LABEL_POS, character_style, text_style)
-        .draw(display).unwrap();
+        .draw(display)?;
 
     // Base
     let base = Bmp::from_slice(RANGE12BASE).unwrap();
-    Image::new(&base, Point::new(position.x, position.y + 7)).draw(display).unwrap();
+    Image::new(&base, Point::new(position.x, position.y + 7)).draw(display)?;
 
     // Bar
     let bar_y_max = position.y + BAR_TOP_LEFT.y;
@@ -167,12 +168,14 @@ where
 
     Rectangle::with_corners(Point::new(bar_top_left.x, top), bar_bottom_right)
         .into_styled(fill)
-        .draw(display).unwrap();
+        .draw(display)?;
 
     // Value
     let text = format!("{:.2}", val);
     Text::with_text_style(&text, position + VALUE_POS, character_style, text_style)
-        .draw(display).unwrap();
+        .draw(display)?;
+
+    Ok(())
 }
 
 fn lerp(min: f32, max: f32, val: f32) -> f32 {
