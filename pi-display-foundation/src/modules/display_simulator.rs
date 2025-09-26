@@ -15,7 +15,7 @@ use triple_buffer::*;
 
 use std::{thread, time::Duration};
 
-pub fn start_display(mut display_reader: Output<PlaceholderState>) {
+pub fn start_display_simulator(mut display_reader: Output<PlaceholderState>) {
     let mut display: SimulatorDisplay<BinaryColor> = SimulatorDisplay::new(Size::new(128, 64));
     let output_settings = OutputSettingsBuilder::new()
         .theme(BinaryColorTheme::OledWhite)

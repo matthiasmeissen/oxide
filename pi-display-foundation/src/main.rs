@@ -25,5 +25,5 @@ fn main() {
     start_display(display_reader);
 
     #[cfg(not(target_os = "linux"))]
-    start_display(display_reader);
+    start_display_simulator(display_reader);
 }
