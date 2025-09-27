@@ -31,5 +31,5 @@ fn main() {
     #[cfg(not(target_os = "linux"))]
     start_display_simulator(display_reader);
 
-    start_graphics_thread(sender.clone(), window_reader);
+    //start_graphics_thread(sender.clone(), window_reader);
 }

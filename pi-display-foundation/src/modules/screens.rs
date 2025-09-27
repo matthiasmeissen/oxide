@@ -13,10 +13,10 @@ use tinybmp::Bmp;
 
 use std::fmt::Debug;
 
-const RANGE12BASE: &'static [u8] = include_bytes!("../../assets/range-12-base.bmp");
-const TRIGGER01: &'static [u8] = include_bytes!("../../assets/trigger-01.bmp");
-const SHADERFRAME: &'static [u8] = include_bytes!("../../assets/shader-frame-001.bmp");
-const GRAPHIC001: &'static [u8] = include_bytes!("../../assets/graphic-001.bmp");
+const RANGE12BASE: &'static [u8] = include_bytes!("../../assets/range-12/range-12-base.bmp");
+const TRIGGER01: &'static [u8] = include_bytes!("../../assets/trigger-01/trigger-01.bmp");
+const SHADERFRAME: &'static [u8] = include_bytes!("../../assets/screen-001/shader-frame-001.bmp");
+const GRAPHIC001: &'static [u8] = include_bytes!("../../assets/screen-001/graphic-001.bmp");
 
 pub fn draw_screen<T>(display: &mut T, state: &State)
 where
