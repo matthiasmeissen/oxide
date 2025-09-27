@@ -180,6 +180,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
+name = "display-foundation"
+version = "0.1.0"
+dependencies = [
+ "crossbeam-channel",
+ "embedded-graphics",
+ "embedded-graphics-simulator",
+ "linux-embedded-hal",
+ "midir",
+ "miniquad",
+ "sh1106",
+ "tinybmp",
+ "triple_buffer",
+]
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -542,21 +557,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-targets",
-]
-
-[[package]]
-name = "pi-display-foundation"
-version = "0.1.0"
-dependencies = [
- "crossbeam-channel",
- "embedded-graphics",
- "embedded-graphics-simulator",
- "linux-embedded-hal",
- "midir",
- "miniquad",
- "sh1106",
- "tinybmp",
- "triple_buffer",
 ]
 
 [[package]]

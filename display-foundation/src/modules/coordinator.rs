@@ -19,11 +19,11 @@ pub fn start_coordinator_thread(
             match update {
                 Message::SetTime(t) => current_state.time = t,
                 Message::SetResolution(w, h) => {
-                    println!("{:?}", current_state);
+                    //println!("{:?}", current_state);
                     current_state.resolution = [w, h]
                 },
                 Message::SetValue(i, v) => {
-                    println!("{:?}", current_state);
+                    //println!("{:?}", current_state);
                     current_state.values[i] = v
                 },
                 Message::SetShaderIndex(i) => {

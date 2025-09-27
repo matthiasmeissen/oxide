@@ -48,11 +48,11 @@ where
     let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
     let text_style = TextStyleBuilder::new()
         .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Center)
+        .alignment(embedded_graphics::text::Alignment::Left)
         .build();
 
     let fps = format!("FPS: {:.2}", state.fps);
-    Text::with_text_style(&fps, Point::new(20, 2), character_style, text_style)
+    Text::with_text_style(&fps, Point::new(32, 2), character_style, text_style)
         .draw(display).unwrap();
 
     draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
