@@ -6,7 +6,11 @@ use triple_buffer::*;
 
 const DEBUG: bool = false;
 
-pub fn start_coordinator_thread(receiver: Receiver<Message>,  mut display_writer: Input<State>) {
+pub fn start_coordinator_thread(
+    receiver: Receiver<Message>,
+    mut window_writer: Input<State>,
+    mut display_writer: Input<State>
+) {
     thread::spawn(move || {
         let mut current_state = State::default();
         let mut last_published_state = current_state;
@@ -69,6 +73,7 @@ pub fn start_coordinator_thread(receiver: Receiver<Message>,  mut display_writer
             }
 
             if current_state != last_published_state {
+                window_writer.write(current_state);
                 display_writer.write(current_state);
                 last_published_state = current_state;
                 if DEBUG {println!("// -> Cooridnator published new state. {:#?}", current_state)} else {};
