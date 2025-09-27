@@ -29,6 +29,10 @@ pub fn start_coordinator_thread(
                 Message::SetShaderIndex(i) => {
                     current_state.shader_index = i
                 }
+                Message::SetFps(fps) => {
+                    current_state.fps = fps;
+                    println!("Fps is: {fps}");
+                }
                 Message::MidiInput(midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {
                         // From Novation
@@ -51,8 +55,8 @@ pub fn start_coordinator_thread(
                         if note == 74 { current_state.values[5] = 1.0 }
                         if note == 75 { current_state.values[6] = 1.0 }
                         if note == 76 { current_state.values[7] = 1.0 }
-                        if note == 41 { current_state.shader_index = 1 }
-                        if note == 42 { current_state.shader_index = 2 }
+                        if note == 41 { current_state.shader_index = 0 }
+                        if note == 42 { current_state.shader_index = 1 }
 
                         // From OP-Z
                         if note == 53 { current_state.values[4] = 1.0 }
