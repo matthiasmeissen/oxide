@@ -25,7 +25,10 @@ pub fn start_display(mut display_reader: Output<State>) {
     
             display.clear();
     
-            draw_screen(&mut display, &state);
+            match state.screen_index {
+                0 => draw_screen(&mut display, &state),
+                _ => draw_debug(&mut display, &state),
+            }
         
             display.flush().unwrap();
     
