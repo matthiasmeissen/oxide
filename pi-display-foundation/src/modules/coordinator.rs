@@ -31,7 +31,9 @@ pub fn start_coordinator_thread(
                 }
                 Message::SetFps(fps) => {
                     current_state.fps = fps;
-                    println!("Fps is: {fps}");
+                }
+                Message::SetScreenIndex(i) => {
+                    current_state.screen_index = i;
                 }
                 Message::MidiInput(midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {
@@ -55,8 +57,12 @@ pub fn start_coordinator_thread(
                         if note == 74 { current_state.values[5] = 1.0 }
                         if note == 75 { current_state.values[6] = 1.0 }
                         if note == 76 { current_state.values[7] = 1.0 }
+
                         if note == 41 { current_state.shader_index = 0 }
                         if note == 42 { current_state.shader_index = 1 }
+
+                        if note == 59 { current_state.screen_index = 0 }
+                        if note == 60 { current_state.screen_index = 1 }
 
                         // From OP-Z
                         if note == 53 { current_state.values[4] = 1.0 }

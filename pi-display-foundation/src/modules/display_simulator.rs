@@ -27,7 +27,12 @@ pub fn start_display_simulator(mut display_reader: Output<State>) {
         let state = display_reader.read();
 
         display.clear(BinaryColor::Off).unwrap();
-        draw_screen(&mut display, &state);
+
+        match state.screen_index {
+            0 => draw_screen(&mut display, &state),
+            _ => draw_debug(&mut display, &state),
+        }
+
         window.update(&display);
 
         if window.events().any(|e| e == SimulatorEvent::Quit) {

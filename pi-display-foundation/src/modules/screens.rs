@@ -38,7 +38,14 @@ where
     draw_shader_frame(display, Point::new(0, 0), state.shader_index + 1);
 
     draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
+}
 
+pub fn draw_debug<T>(display: &mut T, state: &State)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
 }
 
 fn draw_graphic_sprite<T>(display: &mut T, position: Point, val: f32)

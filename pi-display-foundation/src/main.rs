@@ -32,4 +32,6 @@ fn main() {
     start_display_simulator(display_reader);
 
     //start_graphics_thread(sender.clone(), window_reader);
+
+    thread::sleep(Duration::from_secs(1));
 }
