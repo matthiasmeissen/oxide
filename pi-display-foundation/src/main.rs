@@ -25,13 +25,11 @@ fn main() {
 
     start_midi_thread(sender.clone());
 
-    //start_graphics_thread(sender.clone(), window_reader);
-
     #[cfg(target_os = "linux")]
     start_display(display_reader);
-
+    
     #[cfg(not(target_os = "linux"))]
     start_display_simulator(display_reader);
 
-    thread::sleep(Duration::from_secs(1));
+    //start_graphics_thread(sender.clone(), window_reader);
 }
