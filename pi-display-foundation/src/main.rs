@@ -1,21 +1,23 @@
 
 mod modules;
+use modules::{coordinator::*, midi::*, state::*};
+
 #[cfg(target_os = "linux")]
 use modules::display::*;
 
 #[cfg(not(target_os = "linux"))]
 use modules::display_simulator::*;
 
-use modules::{coordinator::*, midi::*};
-
 use crossbeam_channel;
 use triple_buffer::TripleBuffer;
 
-use crate::modules::state::PlaceholderState;
+// To run the simulator run this command in the terminal
+// export LIBRARY_PATH="$LIBRARY_PATH:$(brew --prefix)/lib"
+// This will enable it for that session only
 
 fn main() {
     let (sender, receiver) = crossbeam_channel::bounded(5);
-    let (display_writer, display_reader) = TripleBuffer::new(&PlaceholderState::new()).split();
+    let (display_writer, display_reader) = TripleBuffer::new(&State::default()).split();
 
     start_coordinator_thread(receiver, display_writer);
 

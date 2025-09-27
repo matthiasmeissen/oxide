@@ -6,9 +6,9 @@ use triple_buffer::*;
 
 const DEBUG: bool = false;
 
-pub fn start_coordinator_thread(receiver: Receiver<Message>,  mut display_writer: Input<PlaceholderState>) {
+pub fn start_coordinator_thread(receiver: Receiver<Message>,  mut display_writer: Input<State>) {
     thread::spawn(move || {
-        let mut current_state = PlaceholderState::new();
+        let mut current_state = State::default();
         let mut last_published_state = current_state;
 
         while let Ok(update) = receiver.recv() {
