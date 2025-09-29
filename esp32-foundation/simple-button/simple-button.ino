@@ -68,12 +68,12 @@ int counter2 = 0;
 
 void setup() {
   Serial.begin(9600);
-  
-  button1.begin();
-  button2.begin();
-  
+
   Serial.println("ESP32 Button Test");
   Serial.println("Press the button!");
+  
+  button1.begin();
+  button2.begin();  
 }
 
 void loop() {
