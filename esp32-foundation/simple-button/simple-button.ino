@@ -5,10 +5,17 @@
 // Install the esp32 by Espressif Systems Library
 // Use the ESP32 Dev Module to send code
 
+const int BUTTON1_PIN = 14;
+const int BUTTON2_PIN = 27;
+const int POT_PIN = 32;
+
 struct AppState {
   bool button1_is_pressed;
   bool button2_is_pressed;
+  int potentiometer_value;
 };
+
+AppState globalState;
 
 /*
  * Button Class
@@ -56,10 +63,16 @@ class Button {
     }
 };
 
-AppState globalState;
+int readPotentiometerSmooth() {
+  const int NUM_READINGS = 10; // Number of samples to take
+  int total = 0;
 
-Button button1(14);
-Button button2(27);
+  for (int i = 0; i < NUM_READINGS; i++) {
+    total += analogRead(POT_PIN);
+    delay(1); // Small delay between readings
+  }
+  return total / NUM_READINGS; // Return the average
+}
 
 void printCurrentState() {
   Serial.println("--- State Changed ---");
@@ -67,8 +80,13 @@ void printCurrentState() {
   Serial.println(globalState.button1_is_pressed ? "YES" : "NO");
   Serial.print("Button 2 is pressed: ");
   Serial.println(globalState.button2_is_pressed ? "YES" : "NO");
+  Serial.print("Potentiometer Value: ");
+  Serial.println(globalState.potentiometer_value); // Print the new value
   Serial.println();
 }
+
+Button button1(BUTTON1_PIN);
+Button button2(BUTTON2_PIN);
 
 void setup() {
   Serial.begin(9600);
@@ -80,6 +98,7 @@ void setup() {
   // Initialize our global state to a known default
   globalState.button1_is_pressed = false;
   globalState.button2_is_pressed = false;
+  globalState.potentiometer_value = 0;
 
   Serial.println("ESP32 State Management Ready");
   printCurrentState(); // Print the initial state
@@ -88,16 +107,26 @@ void setup() {
 void loop() {
   button1.update();
   button2.update();
+  bool b1_isPressed = button1.isPressed();
+  bool b2_isPressed = button2.isPressed();
+  int pot_value = readPotentiometerSmooth();
+
+  const int POT_CHANGE_THRESHOLD = 40;
+  bool pot_has_changed = abs(pot_value - globalState.potentiometer_value) > POT_CHANGE_THRESHOLD;
 
   // SECOND: Check if the hardware state has changed compared to our application state
-  if (button1.isPressed() != globalState.button1_is_pressed ||
-      button2.isPressed() != globalState.button2_is_pressed)
+  if (b1_isPressed != globalState.button1_is_pressed ||
+      b2_isPressed != globalState.button2_is_pressed ||
+      pot_has_changed)
   {
-    // If a change is detected, update our global state to match the hardware
-    globalState.button1_is_pressed = button1.isPressed();
-    globalState.button2_is_pressed = button2.isPressed();
+    // --- THIRD: If a change is detected, update the global state ---
+    globalState.button1_is_pressed = b1_isPressed;
+    globalState.button2_is_pressed = b2_isPressed;
+    if (pot_has_changed) {
+      globalState.potentiometer_value = pot_value;
+    }
 
-    // THEN: Take action based on the new state
+    // --- FOURTH: Take action based on the new state ---
     printCurrentState();
   }
 }
