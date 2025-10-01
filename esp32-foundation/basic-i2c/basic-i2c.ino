@@ -1,102 +1,175 @@
-// ESP32 I2C Slave using ESP-IDF driver (NOT Wire library)
-// This is more reliable than Arduino Wire for slave mode
+// ESP32 I2C Slave - Beginner Friendly Version
+// This makes I2C slave communication simple and easy to understand
 
 #include <driver/i2c.h>
 
-// I2C Configuration
-#define I2C_SLAVE_ADDR 0x08
-#define I2C_SLAVE_SDA_IO 21
-#define I2C_SLAVE_SCL_IO 22
-#define I2C_SLAVE_NUM I2C_NUM_0
-#define I2C_SLAVE_TX_BUF_LEN 256
-#define I2C_SLAVE_RX_BUF_LEN 256
+// ===== CONFIGURATION - Change these if needed =====
+#define I2C_ADDRESS 0x08        // ESP32's address on I2C bus (like a house number)
+#define SDA_PIN 21              // Data pin
+#define SCL_PIN 22              // Clock pin
 
-// Buffer for communication
-uint8_t rxBuffer[128];
-uint8_t txBuffer[128];
-volatile int rxBytes = 0;
-volatile bool dataReceived = false;
+// ===== Internal buffers (you don't need to touch these) =====
+#define BUFFER_SIZE 128
+uint8_t receiveBuffer[BUFFER_SIZE];
+uint8_t sendBuffer[BUFFER_SIZE];
+int sendBufferLength = 0;
+
+// ===== SETUP FUNCTION - Call this once in setup() =====
+bool initI2CSlave() {
+  // Configure I2C hardware
+  i2c_config_t conf;
+  conf.sda_io_num = SDA_PIN;
+  conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  conf.scl_io_num = SCL_PIN;
+  conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  conf.mode = I2C_MODE_SLAVE;
+  conf.slave.addr_10bit_en = 0;
+  conf.slave.slave_addr = I2C_ADDRESS;
+  conf.clk_flags = 0;
+  
+  // Install I2C driver
+  if (i2c_param_config(I2C_NUM_0, &conf) != ESP_OK) {
+    return false;
+  }
+  if (i2c_driver_install(I2C_NUM_0, conf.mode, BUFFER_SIZE, BUFFER_SIZE, 0) != ESP_OK) {
+    return false;
+  }
+  
+  return true;
+}
+
+// ===== CHECK FOR NEW DATA - Returns number of bytes received =====
+int checkForData() {
+  return i2c_slave_read_buffer(I2C_NUM_0, receiveBuffer, BUFFER_SIZE, 10 / portTICK_PERIOD_MS);
+}
+
+// ===== GET RECEIVED DATA - Get a specific byte from received data =====
+uint8_t getReceivedByte(int index) {
+  if (index < BUFFER_SIZE) {
+    return receiveBuffer[index];
+  }
+  return 0;
+}
+
+// ===== SEND DATA BACK - Prepare data to send when Pi requests it =====
+void sendData(uint8_t* data, int length) {
+  if (length > BUFFER_SIZE) {
+    length = BUFFER_SIZE;
+  }
+  
+  for (int i = 0; i < length; i++) {
+    sendBuffer[i] = data[i];
+  }
+  sendBufferLength = length;
+  
+  i2c_slave_write_buffer(I2C_NUM_0, sendBuffer, length, 100 / portTICK_PERIOD_MS);
+}
+
+// ===== SEND A SINGLE BYTE - Simple version for sending one byte =====
+void sendByte(uint8_t value) {
+  sendBuffer[0] = value;
+  sendBufferLength = 1;
+  i2c_slave_write_buffer(I2C_NUM_0, sendBuffer, 1, 100 / portTICK_PERIOD_MS);
+}
+
+// ============================================================
+// YOUR CODE STARTS HERE - This is where you write your logic
+// ============================================================
 
 void setup() {
   Serial.begin(9600);
   delay(2000);
   
-  Serial.println("\n=== ESP32 I2C Slave (ESP-IDF Driver) ===");
+  Serial.println("\n=== ESP32 I2C Slave ===");
   Serial.print("Address: 0x");
-  Serial.println(I2C_SLAVE_ADDR, HEX);
-  Serial.print("SDA: GPIO ");
-  Serial.println(I2C_SLAVE_SDA_IO);
-  Serial.print("SCL: GPIO ");
-  Serial.println(I2C_SLAVE_SCL_IO);
+  Serial.println(I2C_ADDRESS, HEX);
   
-  // Configure I2C slave
-  i2c_config_t conf_slave;
-  conf_slave.sda_io_num = I2C_SLAVE_SDA_IO;
-  conf_slave.sda_pullup_en = GPIO_PULLUP_ENABLE;
-  conf_slave.scl_io_num = I2C_SLAVE_SCL_IO;
-  conf_slave.scl_pullup_en = GPIO_PULLUP_ENABLE;
-  conf_slave.mode = I2C_MODE_SLAVE;
-  conf_slave.slave.addr_10bit_en = 0;
-  conf_slave.slave.slave_addr = I2C_SLAVE_ADDR;
-  conf_slave.clk_flags = 0;
-  
-  // Configure and install I2C driver
-  esp_err_t err = i2c_param_config(I2C_SLAVE_NUM, &conf_slave);
-  if (err != ESP_OK) {
-    Serial.print("Config error: ");
-    Serial.println(err);
-    return;
+  // Initialize I2C slave
+  if (initI2CSlave()) {
+    Serial.println("✓ I2C Slave initialized successfully!");
+  } else {
+    Serial.println("✗ I2C initialization failed!");
+    while(1) delay(1000);  // Stop here if failed
   }
   
-  err = i2c_driver_install(I2C_SLAVE_NUM, conf_slave.mode, 
-                          I2C_SLAVE_RX_BUF_LEN, I2C_SLAVE_TX_BUF_LEN, 0);
-  if (err != ESP_OK) {
-    Serial.print("Driver install error: ");
-    Serial.println(err);
-    return;
-  }
-  
-  Serial.println("I2C Slave ready!");
-  Serial.println("Waiting for master...");
-  Serial.println("================================\n");
-  
-  // Prepare a response in TX buffer
-  txBuffer[0] = 0xAA;
+  Serial.println("Waiting for commands from Raspberry Pi...\n");
 }
 
 void loop() {
-  // Check for received data (non-blocking)
-  int size = i2c_slave_read_buffer(I2C_SLAVE_NUM, rxBuffer, sizeof(rxBuffer), 100 / portTICK_PERIOD_MS);
+  // Check if Pi sent us any data
+  int bytesReceived = checkForData();
   
-  if (size > 0) {
-    Serial.print(">>> RECEIVED ");
-    Serial.print(size);
-    Serial.print(" byte(s): ");
+  if (bytesReceived > 0) {
+    Serial.println("--- Data Received ---");
+    Serial.print("Bytes: ");
+    Serial.println(bytesReceived);
     
-    for (int i = 0; i < size; i++) {
+    // Print all received bytes
+    Serial.print("Data: ");
+    for (int i = 0; i < bytesReceived; i++) {
+      uint8_t receivedByte = getReceivedByte(i);
       Serial.print("0x");
-      if (rxBuffer[i] < 16) Serial.print("0");
-      Serial.print(rxBuffer[i], HEX);
+      if (receivedByte < 16) Serial.print("0");
+      Serial.print(receivedByte, HEX);
       Serial.print(" ");
-      
-      // Echo back: prepare response = received byte + 1
-      txBuffer[0] = rxBuffer[i] + 1;
     }
     Serial.println();
     
-    // Write response to TX buffer (ready for next master read)
-    i2c_slave_write_buffer(I2C_SLAVE_NUM, txBuffer, 1, 100 / portTICK_PERIOD_MS);
-    Serial.print("<<< Prepared response: 0x");
-    if (txBuffer[0] < 16) Serial.print("0");
-    Serial.println(txBuffer[0], HEX);
+    // ==== YOUR CUSTOM LOGIC HERE ====
+    // Example: Echo back the first byte + 1
+    uint8_t firstByte = getReceivedByte(0);
+    uint8_t response = firstByte + 1;
+    
+    sendByte(response);
+    Serial.print("Sent response: 0x");
+    if (response < 16) Serial.print("0");
+    Serial.println(response, HEX);
+    Serial.println();
   }
   
-  // Heartbeat
-  static unsigned long lastHeartbeat = 0;
-  if (millis() - lastHeartbeat > 5000) {
-    Serial.println("ESP32 alive and listening...");
-    lastHeartbeat = millis();
+  delay(10);  // Small delay to prevent overwhelming the CPU
+}
+
+// ============================================================
+// EXAMPLE USAGE PATTERNS
+// ============================================================
+
+/*
+// EXAMPLE 1: Simple echo - send back what you received
+void loop() {
+  int bytes = checkForData();
+  if (bytes > 0) {
+    uint8_t data = getReceivedByte(0);
+    sendByte(data);  // Echo it back
   }
-  
   delay(10);
 }
+
+// EXAMPLE 2: Command-based system
+void loop() {
+  int bytes = checkForData();
+  if (bytes > 0) {
+    uint8_t command = getReceivedByte(0);
+    
+    if (command == 0x01) {
+      // Command 1: Return temperature (example)
+      sendByte(25);  // Send 25 degrees
+    } 
+    else if (command == 0x02) {
+      // Command 2: Return status
+      sendByte(0xFF);  // Send "OK" status
+    }
+  }
+  delay(10);
+}
+
+// EXAMPLE 3: Send multiple bytes back
+void loop() {
+  int bytes = checkForData();
+  if (bytes > 0) {
+    uint8_t response[3] = {0xAA, 0xBB, 0xCC};  // Send 3 bytes
+    sendData(response, 3);
+  }
+  delay(10);
+}
+*/
