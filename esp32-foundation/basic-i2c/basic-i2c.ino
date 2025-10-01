@@ -4,6 +4,8 @@
 
 // ===== CONFIGURATION =====
 #define I2C_ADDRESS 0x08
+#define SDA_PIN 21
+#define SCL_PIN 22
 #define BUTTON_PIN 14
 
 // This variable holds the message for the Pi.
@@ -22,6 +24,8 @@ void setup() {
   delay(1000);
   Serial.println("\n=== ESP32 I2C Slave (Wire.h Latching Test) ===");
 
+  pinMode(SDA_PIN, INPUT_PULLUP);
+  pinMode(SCL_PIN, INPUT_PULLUP);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Serial.print("✓ Button configured on GPIO ");
   Serial.println(BUTTON_PIN);

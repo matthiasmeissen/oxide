@@ -25,6 +25,7 @@ fn main() -> Result<(), linux_embedded_hal::i2c::Error> {
         match i2c.read(0x08, &mut buffer) {
             Ok(_) => {
                 // Check if the received byte is our "button pressed" message
+                println!("Received value: {:#04x} ({})", buffer[0], buffer[0]);
                 if buffer[0] == BUTTON_PRESSED_MSG {
                     println!("EVENT: Button press detected on ESP32!");
                 }
