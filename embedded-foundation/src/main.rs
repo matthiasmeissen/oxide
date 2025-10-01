@@ -6,7 +6,7 @@ use std::time::Duration;
 
 const STATE_SIZE: usize = 5;
 
-fn main() -> Result<(), linux_embedded_hal::i2c::Error> {
+fn main() {
     let mut i2c = I2cdev::new("/dev/i2c-1").unwrap();
     i2c.set_slave_address(0x08).unwrap();
 
@@ -19,7 +19,7 @@ fn main() -> Result<(), linux_embedded_hal::i2c::Error> {
         // Read 1 byte from the ESP32
         match i2c.read(0x08, &mut buffer) {
             Ok(_) => {
-                println!("Received value: {:#04x} ({})", buffer[0], buffer[0]);
+                //println!("Received value: {:#04x} ({})", buffer[0], buffer[0]);
 
                 // The first byte (buffer[0]) is the boolean. 1 = true, 0 = false.
                 let button_is_pressed = buffer[0] != 0;
@@ -34,10 +34,7 @@ fn main() -> Result<(), linux_embedded_hal::i2c::Error> {
                 // --- Act on the state ---
                 // To avoid spamming the console, let's only print on change.
                 if button_is_pressed != last_button_state {
-                    println!(
-                        "State Change -> Button Pressed: {}, Encoder: {}",
-                        button_is_pressed, encoder_value
-                    );
+                    println!("State Change -> Button Pressed: {}", button_is_pressed);
                     last_button_state = button_is_pressed;
                 }
             }
