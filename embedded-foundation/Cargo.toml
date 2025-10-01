@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 linux-embedded-hal = "0.3.0"
+embedded-hal = "0.2"
