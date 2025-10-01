@@ -7,12 +7,17 @@
 #define I2C_ADDRESS 0x08        // ESP32's address on I2C bus (like a house number)
 #define SDA_PIN 21              // Data pin
 #define SCL_PIN 22              // Clock pin
+#define BUTTON_PIN 14           // Push button
 
 // ===== Internal buffers (you don't need to touch these) =====
 #define BUFFER_SIZE 128
 uint8_t receiveBuffer[BUFFER_SIZE];
 uint8_t sendBuffer[BUFFER_SIZE];
 int sendBufferLength = 0;
+// This byte holds the message for the Pi.
+// 0x00 = No event
+// 0x01 = Button was pressed
+volatile uint8_t messageForPi = 0x00;
 
 // ===== SETUP FUNCTION - Call this once in setup() =====
 bool initI2CSlave() {
@@ -79,8 +84,13 @@ void sendByte(uint8_t value) {
 void setup() {
   Serial.begin(9600);
   delay(2000);
+
+  Serial.println("\n=== ESP32 I2C Slave with Button ===");
   
-  Serial.println("\n=== ESP32 I2C Slave ===");
+  // Configure the button pin
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  Serial.print("✓ Button configured on GPIO ");
+  Serial.println(BUTTON_PIN);
   Serial.print("Address: 0x");
   Serial.println(I2C_ADDRESS, HEX);
   
@@ -91,10 +101,41 @@ void setup() {
     Serial.println("✗ I2C initialization failed!");
     while(1) delay(1000);  // Stop here if failed
   }
-  
-  Serial.println("Waiting for commands from Raspberry Pi...\n");
+
+  Serial.println("Waiting for commands and button presses...\n");
 }
 
+void loop() {
+  static int lastButtonState = HIGH; 
+
+  int currentButtonState = digitalRead(BUTTON_PIN);
+  
+  if (lastButtonState == HIGH && currentButtonState == LOW) {
+    Serial.println("--- Button Pressed! ---");
+    Serial.println("Setting message for Pi to 0x01\n");
+    messageForPi = 0x01;
+    delay(50); 
+  }
+  
+  lastButtonState = currentButtonState;
+  
+  // 1. Create a normal, temporary copy of the message.
+  uint8_t messageToSend = messageForPi;
+
+  // 2. Pass the temporary copy to the function. This is now a valid type conversion.
+  i2c_slave_write_buffer(I2C_NUM_0, &messageToSend, 1, 0); 
+
+  if (messageForPi == 0x01) {
+    messageForPi = 0x00;
+  }
+
+  delay(10);
+}
+
+
+
+// Old Program
+/*
 void loop() {
   // Check if Pi sent us any data
   int bytesReceived = checkForData();
@@ -129,6 +170,7 @@ void loop() {
   
   delay(10);  // Small delay to prevent overwhelming the CPU
 }
+*/
 
 // ============================================================
 // EXAMPLE USAGE PATTERNS
