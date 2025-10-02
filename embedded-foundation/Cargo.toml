@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+miniquad = "0.4.8"
 linux-embedded-hal = "0.3.0"
 embedded-hal = "0.2"
 crossbeam-channel = "0.5.15"

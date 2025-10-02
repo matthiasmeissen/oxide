@@ -70,7 +70,7 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
             
             thread::sleep(Duration::from_millis(10));
         }
-    })
+    });
 }
 
 fn normalize_encoder(value: i32) -> f64 {
