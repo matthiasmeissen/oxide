@@ -231,5 +231,5 @@ void loop() {
     lastPrint = millis();
   }
   
-  delay(100); // 100Hz update rate
+  delay(4); // 100Hz update rate
 }

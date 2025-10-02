@@ -39,7 +39,7 @@ fn main() {
                 let encoder_button = buffer[2] != 0;
 
                 // bytes 3-6: encoder_value (i32)
-                let encoder_bytes: [u8; 4] = buffer[3..7].try_into()?;
+                let encoder_bytes: [u8; 4] = buffer[3..7].try_into().unwrap();
                 let encoder_value = i32::from_le_bytes(encoder_bytes);
 
                 let current_state = DeviceState {
@@ -60,6 +60,6 @@ fn main() {
         }
         
         // Wait for 100 milliseconds before polling again to avoid spamming the I2C bus
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(10));
     }
 }
