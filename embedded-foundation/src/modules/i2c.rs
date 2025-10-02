@@ -29,39 +29,41 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
         loop {
             let mut buffer = [0u8; STATE_SIZE];
 
-            // Read 1 byte from the ESP32
             match i2c.read(0x08, &mut buffer) {
                 Ok(_) => {
-                    // byte 0: button1
-                    let button1 = buffer[0] != 0;
-
-                    // byte 1: button2
-                    let button2 = buffer[1] != 0;
-
-                    // byte 2: encoder_button
-                    let encoder_button = buffer[2] != 0;
-
-                    // bytes 3-6: encoder_value (i32)
-                    let encoder_bytes: [u8; 4] = buffer[3..7].try_into().unwrap();
-                    let encoder_value = i32::from_le_bytes(encoder_bytes);
-
                     let current_state = DeviceState {
-                        button1,
-                        button2,
-                        encoder_button,
-                        encoder_value,
+                        button1: buffer[0] != 0,
+                        button2: buffer[1] != 0,
+                        encoder_button: buffer[2] != 0,
+                        encoder_value: {
+                            let bytes: [u8; 4] = buffer[3..7].try_into().unwrap_or_default();
+                            i32::from_le_bytes(bytes)
+                        },
                     };
 
-                    if last_state.as_ref() != Some(&current_state) {
-                        println!("State Change -> {:?}", current_state);
-                        last_state = Some(current_state);
+                    if let Some(prev_state) = last_state {
+                        if current_state.encoder_value != prev_state.encoder_value {
+                            let normalized_value = normalize_encoder(current_state.encoder_value);
+                            sender.send(Message::SetValue(0, normalized_value)).unwrap();
+                        }
 
-                        let normalized_value = normalize_encoder(current_state.encoder_value);
-                        sender.send(Message::SetValue(0, normalized_value)).unwrap();
+                        if current_state.button1 != prev_state.button1 {
+                            let value = if current_state.button1 { 1.0 } else { 0.0 };
+                            sender.send(Message::SetValue(4, value)).unwrap();
+                        }
 
-                        let value = if current_state.button1 { 1.0 } else { 0.0 };
-                        sender.send(Message::SetValue(4, value)).unwrap();
+                        if current_state.button2 != prev_state.button2 {
+                            let value = if current_state.button2 { 1.0 } else { 0.0 };
+                            sender.send(Message::SetValue(5, value)).unwrap();
+                        }
+
+                        if current_state.encoder_button != prev_state.encoder_button {
+                            let value = if current_state.encoder_button { 1.0 } else { 0.0 };
+                            sender.send(Message::SetValue(6, value)).unwrap();
+                        }
                     }
+
+                    last_state = Some(current_state);
                 }
                 Err(e) => {
                     eprintln!("Error reading from I2C bus: {:?}", e);
