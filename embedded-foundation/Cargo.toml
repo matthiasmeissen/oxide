@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 linux-embedded-hal = "0.3.0"
 embedded-hal = "0.2"
+crossbeam-channel = "0.5.15"
+triple_buffer = "8.1.1"
