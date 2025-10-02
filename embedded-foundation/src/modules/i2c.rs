@@ -37,7 +37,7 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
                         button2: buffer[1] != 0,
                         encoder_button: buffer[2] != 0,
                         encoder_value: i32::from_le_bytes(buffer[3..7].try_into().unwrap_or_default()),
-                        pot_value: u16::from_le_bytes(buffer[7..9].try_into().unwrap_or_default()),
+                        pot_value: i16::from_le_bytes(buffer[7..9].try_into().unwrap_or_default()),
                     };
 
                     if let Some(prev_state) = last_state {
@@ -84,6 +84,6 @@ fn normalize_enc(value: i32) -> f64 {
     (value - ENC_MIN) as f64 / (ENC_MAX - ENC_MIN) as f64
 }
 
-fn normalize_pot(value: u16) -> f64 {
+fn normalize_pot(value: i16) -> f64 {
     value as f64 / 1024.0
 }

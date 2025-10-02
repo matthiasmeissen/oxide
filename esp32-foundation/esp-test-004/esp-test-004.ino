@@ -9,7 +9,7 @@
 
 // ===== COMPONENT PIN CONFIGURATION =====
 #define BUTTON1_PIN 14
-#define BUTTON2_PIN 35
+#define BUTTON2_PIN 13
 #define POT1_PIN 34
 #define ENC1_CLK_PIN 32
 #define ENC1_DT_PIN 33
@@ -235,7 +235,7 @@ void loop() {
   
   // Optional: Print state for debugging (comment out in production)
   static unsigned long lastPrint = 0;
-  if (millis() - lastPrint > 100) {
+  if (millis() - lastPrint > 500) {
     Serial.printf("BTN1:%d BTN2:%d | ENC1: val=%d btn=%d | POT1: val=%d \n",
                   localState.button1,
                   localState.button2,
