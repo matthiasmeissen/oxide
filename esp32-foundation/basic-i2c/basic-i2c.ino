@@ -1,21 +1,16 @@
-// ESP32 I2C Slave - State-Based Model using Wire.h
-
 #include <Wire.h>
 
-// ===== CONFIGURATION =====
 #define I2C_ADDRESS 0x08
 #define SDA_PIN 21
 #define SCL_PIN 22
 #define BUTTON_PIN 14
 
-// 1. Define the structure of our state.
-//    The __attribute__((packed)) ensures no memory padding is added by the compiler.
 struct State {
   bool button1;
-  int32_t encoder; // Use fixed-size type to match Rust's i32
+  int32_t encoder;
 };
 
-// 2. Create a union to easily convert the struct to a byte array for sending.
+// Create a union to easily convert the struct to a byte array for sending.
 union StateUnion {
   State asStruct;
   uint8_t asBytes[sizeof(State)];
@@ -29,7 +24,6 @@ volatile StateUnion g_state;
 void requestEvent() {
   StateUnion local_state_copy;
 
-  // --- Start of Critical Section ---
   // Disable interrupts to ensure an atomic read of the global state.
   noInterrupts();
   
@@ -38,9 +32,7 @@ void requestEvent() {
   
   // Re-enable interrupts immediately after the copy is done.
   interrupts();
-  // --- End of Critical Section ---
 
-  // Now we can safely send the consistent, local copy.
   Wire.write(local_state_copy.asBytes, sizeof(local_state_copy.asStruct));
 }
 
@@ -49,31 +41,27 @@ void setup() {
   delay(1000);
   Serial.println("\n=== ESP32 I2C State Server ===");
 
+  // This is for the I2C Connection
   pinMode(SDA_PIN, INPUT_PULLUP);
   pinMode(SCL_PIN, INPUT_PULLUP);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  // Initialize the state
   g_state.asStruct.button1 = false;
-  g_state.asStruct.encoder = 0; // Initialize future encoder value
+  g_state.asStruct.encoder = 0;
 
   Wire.begin(I2C_ADDRESS);
-  Wire.onRequest(requestEvent); // We only need onRequest for this model.
+  Wire.onRequest(requestEvent);
   
   Serial.println("✓ I2C Slave initialized. Broadcasting state on request...\n");
 }
 
 void loop() {
-  // The logic in the main loop is now incredibly simple.
-  // We just update the state struct directly.
-
   // Read the button. LOW means it's pressed.
   bool is_pressed = (digitalRead(BUTTON_PIN) == LOW);
 
   // Update the state. This handles press, hold, and release all in one line.
   g_state.asStruct.button1 = is_pressed;
   
-  // (In the future, you would update g_state.asStruct.encoder here)
 
   delay(10); // Small delay to prevent CPU spinning
 }
