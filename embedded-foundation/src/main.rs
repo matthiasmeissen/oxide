@@ -1,6 +1,6 @@
 
 mod modules;
-use modules::{coordinator::*, state::*, i2c::*, graphics::*};
+use modules::{coordinator::*, state::*, i2c::*, graphics::*, display::*};
 
 use crossbeam_channel;
 use triple_buffer::TripleBuffer;
@@ -14,6 +14,8 @@ fn main() {
     start_coordinator_thread(receiver, window_writer, display_writer);
 
     start_i2c_thread(sender.clone());
+
+    start_display(display_reader);
 
     start_graphics_thread(sender.clone(), window_reader);
 

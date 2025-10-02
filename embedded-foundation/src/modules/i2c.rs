@@ -74,8 +74,8 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
 }
 
 fn normalize_encoder(value: i32) -> f64 {
-    const ENC_MIN: i32 = -1000;
-    const ENC_MAX: i32 = 1000;
+    const ENC_MIN: i32 = -128;
+    const ENC_MAX: i32 = 128;
     let value = value.clamp(ENC_MIN, ENC_MAX);
     (value - ENC_MIN) as f64 / (ENC_MAX - ENC_MIN) as f64
 }
