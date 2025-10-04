@@ -51,49 +51,23 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
                     };
 
                     if let Some(prev_state) = last_state {
-                        if current_state.button1 != prev_state.button1 {
-                            let value = if current_state.button1 { 1.0 } else { 0.0 };
-                            sender.send(Message::SetValue(4, value)).unwrap();
-                        }
+                        handle_button_change(prev_state.button1, current_state.button1, 4, &sender);
+                        handle_button_change(prev_state.button2, current_state.button2, 5, &sender);
+                        handle_button_change(prev_state.button3, current_state.button3, 6, &sender);
+                        handle_button_change(prev_state.button4, current_state.button4, 7, &sender);
 
-                        if current_state.button2 != prev_state.button2 {
-                            let value = if current_state.button2 { 1.0 } else { 0.0 };
-                            sender.send(Message::SetValue(5, value)).unwrap();
-                        }
+                        handle_pot_change(prev_state.pot1_value, current_state.pot1_value, 0, &sender);
+                        handle_pot_change(prev_state.pot2_value, current_state.pot2_value, 1, &sender);
+                        handle_pot_change(prev_state.pot3_value, current_state.pot3_value, 2, &sender);
+                        handle_pot_change(prev_state.pot4_value, current_state.pot4_value, 3, &sender);
 
-                        if current_state.button3 != prev_state.button3 {
-                            let value = if current_state.button3 { 1.0 } else { 0.0 };
-                            sender.send(Message::SetValue(6, value)).unwrap();
-                        }
-
-                        if current_state.button4 != prev_state.button4 {
-                            let value = if current_state.button4 { 1.0 } else { 0.0 };
-                            sender.send(Message::SetValue(7, value)).unwrap();
-                        }
-
-                        if current_state.pot1_value != prev_state.pot1_value {
-                            sender.send(Message::SetValue(0, normalize_pot(current_state.pot1_value))).unwrap();
-                        }
-
-                        if current_state.pot2_value != prev_state.pot2_value {
-                            sender.send(Message::SetValue(1, normalize_pot(current_state.pot2_value))).unwrap();
-                        }
-
-                        if current_state.pot3_value != prev_state.pot3_value {
-                            sender.send(Message::SetValue(2, normalize_pot(current_state.pot3_value))).unwrap();
-                        }
-
-                        if current_state.pot4_value != prev_state.pot4_value {
-                            sender.send(Message::SetValue(3, normalize_pot(current_state.pot4_value))).unwrap();
-                        }
-
-                        if current_state.encoder_button != prev_state.encoder_button {
-                            let value = if current_state.encoder_button { 1.0 } else { 0.0 };
-                            sender.send(Message::IncrementScreenIndex).unwrap();
+                        match (prev_state.encoder_button, current_state.encoder_button) {
+                            (false, true) => sender.send(Message::IncrementScreenIndex).unwrap(),
+                            _ => (),
                         }
 
                         if current_state.encoder_value != prev_state.encoder_value {
-                            sender.send(Message::SetShaderIndex(current_state.encoder_value)).unwrap();
+                            sender.send(Message::SetShaderIndex(current_state.encoder_value as usize)).unwrap();
                         }
                     }
 
@@ -118,4 +92,17 @@ fn normalize_enc(value: i32) -> f64 {
 
 fn normalize_pot(value: i16) -> f64 {
     value as f64 / 1024.0
+}
+
+fn handle_button_change(prev: bool, current: bool, index: usize, sender: &Sender<Message>) {
+    if prev != current {
+        let value = if current { 1.0 } else { 0.0 };
+        sender.send(Message::SetValue(index, value)).unwrap();
+    }
+}
+
+fn handle_pot_change(prev: u16, current: u16, index: usize, sender: &Sender<Message>) {
+    if prev != current {
+        sender.send(Message::SetValue(index, normalize_pot(current))).unwrap();
+    }
 }
