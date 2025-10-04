@@ -73,7 +73,7 @@ void main() {
     vec3 finalColor = mix(col, invertedCol, u_gate1);
     
     // Contrast adjustment with gate4
-    float contrast = mix(0.5, 2.0, u_gate4);
+    float contrast = mix(1.0, 0.2, u_gate4);
     finalColor = (finalColor - 0.5) * contrast + 0.5;
     finalColor = clamp(finalColor, 0.0, 1.0);
     

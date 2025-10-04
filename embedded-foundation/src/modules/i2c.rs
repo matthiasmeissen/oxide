@@ -101,7 +101,7 @@ fn handle_button_change(prev: bool, current: bool, index: usize, sender: &Sender
     }
 }
 
-fn handle_pot_change(prev: u16, current: u16, index: usize, sender: &Sender<Message>) {
+fn handle_pot_change(prev: i16, current: i16, index: usize, sender: &Sender<Message>) {
     if prev != current {
         sender.send(Message::SetValue(index, normalize_pot(current))).unwrap();
     }
