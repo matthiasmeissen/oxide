@@ -29,6 +29,7 @@ pub enum Message {
     SetShaderIndex(usize),
     SetFps(f64),
     SetScreenIndex(usize),
+    IncrementScreenIndex,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

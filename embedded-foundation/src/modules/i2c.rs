@@ -89,11 +89,11 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
 
                         if current_state.encoder_button != prev_state.encoder_button {
                             let value = if current_state.encoder_button { 1.0 } else { 0.0 };
-                            sender.send(Message::SetValue(6, value)).unwrap();
+                            sender.send(Message::IncrementScreenIndex).unwrap();
                         }
 
                         if current_state.encoder_value != prev_state.encoder_value {
-                            sender.send(Message::SetValue(0, normalize_enc(current_state.encoder_value))).unwrap();
+                            sender.send(Message::SetShaderIndex(current_state.encoder_value)).unwrap();
                         }
                     }
 
