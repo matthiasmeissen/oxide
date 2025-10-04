@@ -17,8 +17,8 @@
 #define POT3_PIN 32       // ADC1 - Input only
 #define POT4_PIN 33       // ADC1 - Input only
 #define ENC1_SW_PIN 13    // Input Pullup
-#define ENC1_CLK_PIN 18   // Input Pullup
-#define ENC1_DT_PIN 19    // Input Pullup
+#define ENC1_CLK_PIN 19   // Input Pullup
+#define ENC1_DT_PIN 18    // Input Pullup
 
 // ===== DEBOUNCE CONFIGURATION =====
 #define DEBOUNCE_DELAY_MS 50
