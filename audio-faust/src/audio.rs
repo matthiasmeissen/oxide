@@ -39,6 +39,8 @@ pub fn start_audio_thread() {
             &config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 let num_frames = data.len() / host_channels;
+
+                dsp.set_param(ParamIndex(0), 200.0);
     
                 let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers
                     .iter_mut()
@@ -64,7 +66,7 @@ pub fn start_audio_thread() {
         stream.play().unwrap();
     
         println!("Audio engine initialized and running.");
-        
+
         loop {
             thread::sleep(std::time::Duration::from_secs(1));
         }

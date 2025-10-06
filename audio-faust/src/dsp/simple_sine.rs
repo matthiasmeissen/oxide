@@ -102,6 +102,7 @@ pub trait UI<T> {
 #[repr(C)]
 pub struct SimpleSine {
 	iVec1: [i32;2],
+	fHslider0: F32,
 	fSampleRate: i32,
 	fConst0: F32,
 	fRec1: [F32;2],
@@ -170,7 +171,7 @@ fn rint_f32(val: f32) -> f32 {
 
 pub const FAUST_INPUTS: usize = 0;
 pub const FAUST_OUTPUTS: usize = 2;
-pub const FAUST_ACTIVES: usize = 0;
+pub const FAUST_ACTIVES: usize = 1;
 pub const FAUST_PASSIVES: usize = 0;
 
 
@@ -179,6 +180,7 @@ impl SimpleSine {
 	pub fn new() -> SimpleSine { 
 		SimpleSine {
 			iVec1: [0;2],
+			fHslider0: 0.0,
 			fSampleRate: 0,
 			fConst0: 0.0,
 			fRec1: [0.0;2],
@@ -211,6 +213,7 @@ impl SimpleSine {
 		sig0.fillmydspSIG0(65536, ftbl0mydspSIG0_guard.as_mut());
 	}
 	pub fn instance_reset_params(&mut self) {
+		self.fHslider0 = 4.4e+02;
 	}
 	pub fn instance_clear(&mut self) {
 		for l2 in 0..2 {
@@ -224,7 +227,7 @@ impl SimpleSine {
 		// Obtaining locks on 1 static var(s)
 		let ftbl0mydspSIG0_guard = ftbl0mydspSIG0.read().unwrap();
 		self.fSampleRate = sample_rate;
-		self.fConst0 = 4.4e+02 / F32::min(1.92e+05, F32::max(1.0, (self.fSampleRate) as F32));
+		self.fConst0 = 1.0 / F32::min(1.92e+05, F32::max(1.0, (self.fSampleRate) as F32));
 	}
 	pub fn instance_init(&mut self, sample_rate: i32) {
 		self.instance_constants(sample_rate);
@@ -242,17 +245,20 @@ impl SimpleSine {
 	
 	pub fn build_user_interface_static(ui_interface: &mut dyn UI<FaustFloat>) {
 		ui_interface.open_vertical_box("simple_sine");
+		ui_interface.add_horizontal_slider("freq", ParamIndex(0), 4.4e+02, 4e+01, 2e+03, 1.0);
 		ui_interface.close_box();
 	}
 	
 	pub fn get_param(&self, param: ParamIndex) -> Option<FaustFloat> {
 		match param.0 {
+			0 => Some(self.fHslider0),
 			_ => None,
 		}
 	}
 	
 	pub fn set_param(&mut self, param: ParamIndex, value: FaustFloat) {
 		match param.0 {
+			0 => { self.fHslider0 = value }
 			_ => {}
 		}
 	}
@@ -269,10 +275,11 @@ impl SimpleSine {
 		let [outputs0, outputs1, .. ] = outputs.as_mut() else { panic!("wrong number of output buffers"); };
 		let outputs0 = outputs0.as_mut()[..count].iter_mut();
 		let outputs1 = outputs1.as_mut()[..count].iter_mut();
+		let mut fSlow0: F32 = self.fConst0 * self.fHslider0;
 		let zipped_iterators = outputs0.zip(outputs1);
 		for (output0, output1) in zipped_iterators {
 			self.iVec1[0] = 1;
-			let mut fTemp0: F32 = (if i32::wrapping_sub(1, self.iVec1[1]) != 0 {0.0} else {self.fConst0 + self.fRec1[1]});
+			let mut fTemp0: F32 = (if i32::wrapping_sub(1, self.iVec1[1]) != 0 {0.0} else {fSlow0 + self.fRec1[1]});
 			self.fRec1[0] = fTemp0 - F32::floor(fTemp0);
 			let mut fTemp1: F32 = 0.2 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec1[0]) as i32, 65535))) as usize];
 			*output0 = fTemp1;
