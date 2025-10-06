@@ -36,9 +36,6 @@ Compilation options: -a /usr/local/share/faust/rust/jack-float.rs -lang rust -ct
 #![allow(unused_mut)]
 #![allow(non_upper_case_globals)]
 
-use std::io;
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-
 type F32 = f32;
 type F64 = f64;
 
@@ -172,7 +169,7 @@ fn rint_f32(val: f32) -> f32 {
 }
 
 pub const FAUST_INPUTS: usize = 0;
-pub const FAUST_OUTPUTS: usize = 1;
+pub const FAUST_OUTPUTS: usize = 2;
 pub const FAUST_ACTIVES: usize = 0;
 pub const FAUST_PASSIVES: usize = 0;
 
@@ -269,14 +266,17 @@ impl SimpleSine {
 		
 		// Obtaining locks on 1 static var(s)
 		let ftbl0mydspSIG0_guard = ftbl0mydspSIG0.read().unwrap();
-		let [outputs0, .. ] = outputs.as_mut() else { panic!("wrong number of output buffers"); };
+		let [outputs0, outputs1, .. ] = outputs.as_mut() else { panic!("wrong number of output buffers"); };
 		let outputs0 = outputs0.as_mut()[..count].iter_mut();
-		let zipped_iterators = outputs0;
-		for output0 in zipped_iterators {
+		let outputs1 = outputs1.as_mut()[..count].iter_mut();
+		let zipped_iterators = outputs0.zip(outputs1);
+		for (output0, output1) in zipped_iterators {
 			self.iVec1[0] = 1;
 			let mut fTemp0: F32 = (if i32::wrapping_sub(1, self.iVec1[1]) != 0 {0.0} else {self.fConst0 + self.fRec1[1]});
 			self.fRec1[0] = fTemp0 - F32::floor(fTemp0);
-			*output0 = 0.2 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec1[0]) as i32, 65535))) as usize];
+			let mut fTemp1: F32 = 0.2 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec1[0]) as i32, 65535))) as usize];
+			*output0 = fTemp1;
+			*output1 = fTemp1;
 			self.iVec1[1] = self.iVec1[0];
 			self.fRec1[1] = self.fRec1[0];
 		}

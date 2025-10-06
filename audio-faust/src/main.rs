@@ -11,41 +11,76 @@
 // Add more DSP modules and switch on runtime bewteen them
 
 
-use std::io;
+mod dsp;
+use dsp::simple_sine::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
-mod dsp;
-use dsp::simple_sine::SimpleSine;
-
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let host = cpal::default_host();
-    let device = host.default_output_device().expect("no output device available");
-    let config = device.default_output_config().expect("no default config");
-    let sample_rate = config.sample_rate().0 as i32;
-    
-    let mut dsp = SimpleSine::new();
-    dsp.init(sample_rate);
+    let device = host.default_output_device().expect("No output device available");
+    let mut supported_configs_range = device.supported_output_configs().expect("Error while querying configs");
+    let supported_config = supported_configs_range.next().expect("No supported config?!").with_max_sample_rate();
 
-    let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
+    if supported_config.sample_format() != cpal::SampleFormat::F32 {
+        eprintln!("This example requires a device that supports f32 sample format.");
+        return Ok(());
+    }
+    
+    let config = supported_config.config();
+    let sample_rate = config.sample_rate.0;
+    let host_channels = config.channels as usize;
+
+    println!("Audio Device Initialized:");
+    println!("- Sample Rate: {} Hz", sample_rate);
+    println!("- Host Channels: {}", host_channels);
+
+    let mut dsp = SimpleSine::new();
+    dsp.init(sample_rate as i32);
+    let dsp_outputs = dsp.get_num_outputs() as usize;
+    println!("- Faust DSP Channels: {}", dsp_outputs);
+
+    let max_buffer_size = match *device.default_output_config().unwrap().buffer_size() {
+        cpal::SupportedBufferSize::Range { max, .. } => max as usize,
+        cpal::SupportedBufferSize::Unknown => 4096,
+    };
+
+    let mut dsp_output_buffers: Vec<Vec<f32>> = (0..dsp_outputs)
+        .map(|_| vec![0.0; max_buffer_size])
+        .collect();
+
+    let err_fn = |err| eprintln!("an error occurred on the stream: {}", err);
 
     let stream = device.build_output_stream(
-        &config.into(),
+        &config,
         move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-            // Since our DSP is mono, we can just treat the whole buffer as our one output.
-            // If it were stereo, we would need to de-interleave the `data` buffer first.
-            let buffer_size = data.len();
-            let mut outputs: [&mut [f32]; 1] = [&mut data[..buffer_size]];
-            let inputs: [&[f32]; 0] = [];
+            let num_frames = data.len() / host_channels;
 
-            dsp.compute(buffer_size as usize, &inputs, &mut outputs);
+            let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers
+                .iter_mut()
+                .map(|buf| &mut buf[..num_frames])
+                .collect();
+
+            let dsp_input_slices: Vec<&[f32]> = Vec::new();
+
+            dsp.compute(num_frames, &dsp_input_slices, &mut dsp_output_slices);
+
+            for i in 0..num_frames {
+                for c in 0..host_channels {
+                    let dsp_channel_index = std::cmp::min(c, dsp_outputs - 1);
+                    let sample = dsp_output_slices[dsp_channel_index][i];
+                    data[i * host_channels + c] = sample;
+                }
+            }
         },
         err_fn,
-        None
-    ).unwrap();
+        None,
+    )?;
 
-    stream.play().unwrap();
+    stream.play()?;
 
-    println!("Playing audio, press Enter to quit...");
+    println!("\nPlaying audio, press Enter to quit...");
     let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
+    std::io::stdin().read_line(&mut input)?;
+
+    Ok(())
 }
