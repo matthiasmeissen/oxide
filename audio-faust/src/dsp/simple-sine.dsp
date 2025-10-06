@@ -1,6 +1,7 @@
 import("stdfaust.lib");
 
-osc = os.osc(440.0);
+freq = hslider("freq", 440.0, 40, 2000, 1);
+osc = os.osc(freq);
 amp = 0.2;
 voice = osc * amp;
 
