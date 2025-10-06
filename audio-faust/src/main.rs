@@ -8,7 +8,7 @@
 // Add miniquad and control frequency with mouse position
 // Export graph from Faust with adsr trigger parameters
 // Use keypress from miniquad to trigger envelope
-// Add more DSP modules and switch on runtime bewteen them
+// Add more DSP modules and switch on runtime between them
 
 
 mod dsp;

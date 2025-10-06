@@ -1,6 +1,6 @@
 use std::thread;
 
-use crate::dsp::simple_sine::*;
+use crate::dsp::{basic_fm::*};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 pub fn start_audio_thread() {
@@ -19,7 +19,7 @@ pub fn start_audio_thread() {
         println!("- Sample Rate: {} Hz", sample_rate);
         println!("- Host Channels: {}", host_channels);
     
-        let mut dsp = SimpleSine::new();
+        let mut dsp = BasicFm::new();
         dsp.init(sample_rate as i32);
         let dsp_outputs = dsp.get_num_outputs() as usize;
         println!("- Faust DSP Channels: {}", dsp_outputs);
