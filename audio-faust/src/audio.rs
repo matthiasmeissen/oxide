@@ -6,6 +6,7 @@ use crate::dsp::{FaustDsp, ParamIndex};
 use crate::dsp::{
     basic_fm::BasicFm,
     simple_sine::SimpleSine,
+    drum_engine::DrumEngine,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use triple_buffer::Output;
@@ -15,6 +16,7 @@ fn dsp_factory(dsp_type: DspType, sample_rate: u32) -> Box<dyn FaustDsp<T = f32>
     let mut dsp: Box<dyn FaustDsp<T = f32> + Send> = match dsp_type {
         DspType::BasicFm => Box::new(BasicFm::new()),
         DspType::SimpleSine => Box::new(SimpleSine::new()),
+        DspType::DrumEngine => Box::new(DrumEngine::new()),
     };
     dsp.init(sample_rate as i32);
     dsp

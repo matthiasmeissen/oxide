@@ -37,8 +37,9 @@ pub enum MidiMessage {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DspType {
-    BasicFm,
     SimpleSine,
+    BasicFm,
+    DrumEngine,
 }
 
 impl Default for DspType {

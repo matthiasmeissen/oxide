@@ -1,6 +1,7 @@
 
 pub mod simple_sine;
 pub mod basic_fm;
+pub mod drum_engine;
 
 type F32 = f32;
 type F64 = f64;
