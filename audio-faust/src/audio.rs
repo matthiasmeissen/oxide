@@ -10,11 +10,6 @@ use crate::dsp::{
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use triple_buffer::Output;
 
-#[derive(Debug, Clone, Copy)]
-pub enum DspType {
-    SimpleSine,
-    BasicFm,
-}
 
 fn dsp_factory(dsp_type: DspType, sample_rate: u32) -> Box<dyn FaustDsp<T = f32> + Send> {
     let mut dsp: Box<dyn FaustDsp<T = f32> + Send> = match dsp_type {
@@ -41,9 +36,9 @@ pub fn start_audio_thread(mut audio_reader: Output<State>) {
         println!("- Sample Rate: {} Hz", sample_rate);
         println!("- Host Channels: {}", host_channels);
     
-        let mut dsp = dsp_factory(DspType::BasicFm, sample_rate);
-        dsp.init(sample_rate as i32);
-        let dsp_outputs = dsp.get_num_outputs() as usize;
+        let mut current_dsp_type = DspType::default();
+        let mut dsp = dsp_factory(current_dsp_type, sample_rate);
+        let mut dsp_outputs = dsp.get_num_outputs() as usize;
         println!("- Faust DSP Channels: {}", dsp_outputs);
     
         let max_buffer_size = match *device.default_output_config().unwrap().buffer_size() {
@@ -63,14 +58,22 @@ pub fn start_audio_thread(mut audio_reader: Output<State>) {
                 let num_frames = data.len() / host_channels;
                 let state = audio_reader.read();
 
+                if state.dsp_type != current_dsp_type {
+                    dsp = dsp_factory(state.dsp_type, sample_rate);
+                    current_dsp_type = state.dsp_type;
+
+                    let new_dsp_outputs = dsp.get_num_outputs() as usize;
+                    if new_dsp_outputs != dsp_outputs {
+                        dsp_outputs = new_dsp_outputs;
+                        dsp_output_buffers = (0..dsp_outputs).map(|_| vec![0.0; max_buffer_size]).collect();
+                    }
+                }
+
                 dsp.set_param(ParamIndex(0), state.values[0]);
                 dsp.set_param(ParamIndex(1), state.values[1]);
                 dsp.set_param(ParamIndex(4), state.values[4]);
     
-                let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers
-                    .iter_mut()
-                    .map(|buf| &mut buf[..num_frames])
-                    .collect();
+                let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers.iter_mut().map(|buf| &mut buf[..num_frames]).collect();
     
                 let dsp_input_slices: Vec<&[f32]> = Vec::new();
     

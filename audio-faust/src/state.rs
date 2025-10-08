@@ -4,6 +4,7 @@ pub struct State {
     pub resolution: [f32; 2],
     pub values: [f32; 8],
     pub shader_index: usize,
+    pub dsp_type: DspType,
 }
 
 impl Default for State {
@@ -13,6 +14,7 @@ impl Default for State {
             resolution: [0.0, 0.0], 
             values: [0.5; 8],
             shader_index: 0,
+            dsp_type: DspType::default(),
         }
     }
 }
@@ -23,6 +25,7 @@ pub enum Message {
     SetValue(usize, f32),
     MidiInput(MidiMessage),
     SetShaderIndex(usize),
+    SetDspType(DspType),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -30,4 +33,16 @@ pub enum MidiMessage {
     NoteOn { note: u8, velocity: u8 },
     NoteOff { note: u8 },
     ControlChange { controller: u8, value: u8 },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DspType {
+    BasicFm,
+    SimpleSine,
+}
+
+impl Default for DspType {
+    fn default() -> Self {
+        DspType::BasicFm
+    }
 }

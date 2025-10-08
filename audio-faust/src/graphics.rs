@@ -240,6 +240,8 @@ impl EventHandler for Stage {
             KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
             KeyCode::Key3 => {self.sender.try_send(Message::SetValue(6, 1.0)).ok();},
             KeyCode::Key4 => {self.sender.try_send(Message::SetValue(7, 1.0)).ok();},
+            KeyCode::A => {self.sender.try_send(Message::SetDspType(DspType::SimpleSine)).ok();},
+            KeyCode::S => {self.sender.try_send(Message::SetDspType(DspType::BasicFm)).ok();},
             KeyCode::F => {
                 self.is_fullscreen = !self.is_fullscreen;
                 window::set_fullscreen(self.is_fullscreen);
