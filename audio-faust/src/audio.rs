@@ -1,9 +1,29 @@
 use std::thread;
 
 use crate::state::*;
-use crate::dsp::{basic_fm::*};
+use crate::dsp::{FaustDsp, ParamIndex};
+
+use crate::dsp::{
+    basic_fm::BasicFm,
+    simple_sine::SimpleSine,
+};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use triple_buffer::Output;
+
+#[derive(Debug, Clone, Copy)]
+pub enum DspType {
+    SimpleSine,
+    BasicFm,
+}
+
+fn dsp_factory(dsp_type: DspType, sample_rate: u32) -> Box<dyn FaustDsp<T = f32> + Send> {
+    let mut dsp: Box<dyn FaustDsp<T = f32> + Send> = match dsp_type {
+        DspType::BasicFm => Box::new(BasicFm::new()),
+        DspType::SimpleSine => Box::new(SimpleSine::new()),
+    };
+    dsp.init(sample_rate as i32);
+    dsp
+}
 
 pub fn start_audio_thread(mut audio_reader: Output<State>) {
     thread::spawn(move || {
@@ -21,7 +41,7 @@ pub fn start_audio_thread(mut audio_reader: Output<State>) {
         println!("- Sample Rate: {} Hz", sample_rate);
         println!("- Host Channels: {}", host_channels);
     
-        let mut dsp = BasicFm::new();
+        let mut dsp = dsp_factory(DspType::BasicFm, sample_rate);
         dsp.init(sample_rate as i32);
         let dsp_outputs = dsp.get_num_outputs() as usize;
         println!("- Faust DSP Channels: {}", dsp_outputs);
@@ -54,7 +74,7 @@ pub fn start_audio_thread(mut audio_reader: Output<State>) {
     
                 let dsp_input_slices: Vec<&[f32]> = Vec::new();
     
-                dsp.compute(num_frames, &dsp_input_slices, &mut dsp_output_slices);
+                dsp.compute(num_frames as i32, &dsp_input_slices, &mut dsp_output_slices);
     
                 for i in 0..num_frames {
                     for c in 0..host_channels {
