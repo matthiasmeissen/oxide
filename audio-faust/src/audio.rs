@@ -1,9 +1,11 @@
 use std::thread;
 
+use crate::state::*;
 use crate::dsp::{basic_fm::*};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use triple_buffer::Output;
 
-pub fn start_audio_thread() {
+pub fn start_audio_thread(mut audio_reader: Output<State>) {
     thread::spawn(move || {
         let host = cpal::default_host();
             let device = host.default_output_device().expect("No output device found");
@@ -39,8 +41,10 @@ pub fn start_audio_thread() {
             &config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 let num_frames = data.len() / host_channels;
+                let state = audio_reader.read();
 
-                dsp.set_param(ParamIndex(0), 200.0);
+                dsp.set_param(ParamIndex(0), state.values[0] * 1160.0 + 40.0);
+                dsp.set_param(ParamIndex(1), state.values[1] * 8.0 + 36.0);
     
                 let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers
                     .iter_mut()

@@ -13,17 +13,26 @@
 
 mod dsp;
 mod audio;
-use audio::*;
+mod state;
+mod coordinator;
+mod graphics;
 
-use std::io;
+use audio::*;
+use state::*;
+use coordinator::*;
+use graphics::*;
+
+use crossbeam_channel;
+use triple_buffer::TripleBuffer;
 
 fn main()  {
-    start_audio_thread();
+    let (sender, receiver) = crossbeam_channel::bounded(5);
+    let (window_writer, window_reader) = TripleBuffer::new(&State::default()).split();
+    let (audio_writer, audio_reader) = TripleBuffer::new(&State::default()).split();
 
-    println!("\nAudio is playing. Press Enter to quit.");
+    start_coordinator_thread(receiver, window_writer, audio_writer);
     
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
+    start_audio_thread(audio_reader);
 
-    println!("Exiting.");
+    start_graphics_thread(sender.clone(), window_reader);
 }
