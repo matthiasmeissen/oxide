@@ -43,8 +43,9 @@ pub fn start_audio_thread(mut audio_reader: Output<State>) {
                 let num_frames = data.len() / host_channels;
                 let state = audio_reader.read();
 
-                dsp.set_param(ParamIndex(0), state.values[0] * 1160.0 + 40.0);
-                dsp.set_param(ParamIndex(1), state.values[1] * 8.0 + 36.0);
+                dsp.set_param(ParamIndex(0), state.values[0]);
+                dsp.set_param(ParamIndex(1), state.values[1]);
+                dsp.set_param(ParamIndex(4), state.values[4]);
     
                 let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers
                     .iter_mut()
