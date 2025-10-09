@@ -44,6 +44,8 @@ struct Stage {
     is_fullscreen: bool,
     shader_paths: Vec<String>,
     current_shader_index: usize,
+    last_fps_update: Instant,
+    frames_since_update: u32,
 }
 
 impl Stage {
@@ -132,6 +134,8 @@ impl Stage {
             is_fullscreen: false,
             shader_paths,
             current_shader_index,
+            last_fps_update: Instant::now(),
+            frames_since_update: 0,
         }
     }
 
@@ -179,6 +183,17 @@ impl Stage {
 
 impl EventHandler for Stage {
     fn update(&mut self) {
+        self.frames_since_update += 1;
+        let now = Instant::now();
+        let elapsed = now.duration_since(self.last_fps_update).as_secs_f64();
+
+        if elapsed >= 1.0 {
+            let fps = self.frames_since_update as f32 / elapsed as f32;
+            self.sender.try_send(Message::SetFps(fps)).ok();
+            self.frames_since_update = 0;
+            self.last_fps_update = now;
+        }
+
         let new_shader_index = self.reader.read().shader_index;
         
         if new_shader_index != self.current_shader_index {
