@@ -705,6 +705,7 @@ dependencies = [
  "cpal",
  "crossbeam-channel",
  "embedded-graphics",
+ "embedded-hal",
  "linux-embedded-hal",
  "midir",
  "miniquad",

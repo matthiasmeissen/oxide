@@ -14,6 +14,10 @@ pub mod audio;
 pub mod dsp;
 pub mod midi;
 
+pub mod display;
+pub mod screens;
+pub mod i2c;
+
 use state::*;
 use coordinator::*;
 use graphics::*;
@@ -21,9 +25,9 @@ use audio::*;
 use midi::*;
 
 #[cfg(target_os = "linux")]
-pub mod display;
-#[cfg(target_os = "linux")]
 use display::*;
+#[cfg(target_os = "linux")]
+use i2c::*;
 
 use crossbeam_channel;
 use triple_buffer::TripleBuffer;
@@ -42,6 +46,8 @@ fn main() {
 
     #[cfg(target_os = "linux")]
     start_display(display_reader);
+    #[cfg(target_os = "linux")]
+    start_i2c_thread(sender.clone());
 
     start_audio_thread(audio_reader);
 
