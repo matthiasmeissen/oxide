@@ -84,15 +84,15 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
     });
 }
 
-fn normalize_enc(value: i32) -> f64 {
+fn normalize_enc(value: i32) -> f32 {
     const ENC_MIN: i32 = -128;
     const ENC_MAX: i32 = 128;
     let value = value.clamp(ENC_MIN, ENC_MAX);
-    (value - ENC_MIN) as f64 / (ENC_MAX - ENC_MIN) as f64
+    (value - ENC_MIN) as f32 / (ENC_MAX - ENC_MIN) as f32
 }
 
-fn normalize_pot(value: i16) -> f64 {
-    value as f64 / 1024.0
+fn normalize_pot(value: i16) -> f32 {
+    value as f32 / 1024.0
 }
 
 fn handle_button_change(prev: bool, current: bool, index: usize, sender: &Sender<Message>) {

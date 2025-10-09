@@ -31,6 +31,7 @@ pub enum Message {
     SetShaderIndex(usize),
     SetFps(f32),
     SetScreenIndex(usize),
+    IncrementScreenIndex,
     SetDspType(DspType),
 }
 

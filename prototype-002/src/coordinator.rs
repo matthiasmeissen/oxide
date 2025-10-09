@@ -5,6 +5,8 @@ use crossbeam_channel::Receiver;
 use triple_buffer::*;
 
 const DEBUG: bool = false;
+const NUM_SHADERS: usize = 3;
+const NUM_SCREENS: usize = 2;
 
 pub fn start_coordinator_thread(
     receiver: Receiver<Message>,
@@ -34,7 +36,10 @@ pub fn start_coordinator_thread(
                     current_state.fps = fps;
                 }
                 Message::SetScreenIndex(i) => {
-                    current_state.screen_index = i;
+                    current_state.shader_index = i % NUM_SHADERS;
+                }
+                Message::IncrementScreenIndex => {
+                    current_state.screen_index = (current_state.screen_index + 1) % NUM_SCREENS;
                 }
                 Message::SetDspType(dt) => {
                     current_state.dsp_type = dt;
