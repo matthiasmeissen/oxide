@@ -54,7 +54,7 @@ pub fn start_coordinator_thread(
                         if controller == 3 { current_state.values[2] = normalize_midi(value); }
                         if controller == 4 { current_state.values[3] = normalize_midi(value); }
 
-                        println!("{:?}", current_state);
+                        //println!("{:?}", current_state);
                     }
                     MidiMessage::NoteOn { note, .. } => {
                         // From Novation

@@ -17,8 +17,10 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
             return;
         }
 
+        let target_names = ["OP-Z", "Launch Control XL"];
         let target_port = in_ports.iter().find(|p| {
-            midi_in.port_name(p).unwrap_or_default().contains("OP-Z")
+            let port_name = midi_in.port_name(p).unwrap_or_default();
+            target_names.iter().any(|&name| port_name.contains(name))
         });
 
         let port = match target_port {
@@ -45,7 +47,7 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
         let _connection = midi_in.connect(
             port, "Midi Input", move |_timestamp, message, _| {
                 if let Some(parsed_message) = parse_midi_message(message) {
-                    println!("MIDI parsed: {:?}", parsed_message);
+                    //println!("MIDI parsed: {:?}", parsed_message);
                     midi_sender.try_send(Message::MidiInput(parsed_message)).ok();
                 }
             }, ()
