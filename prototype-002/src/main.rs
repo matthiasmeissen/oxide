@@ -20,6 +20,11 @@ use graphics::*;
 use audio::*;
 use midi::*;
 
+#[cfg(target_os = "linux")]
+pub mod display;
+#[cfg(target_os = "linux")]
+use display::*;
+
 use crossbeam_channel;
 use triple_buffer::TripleBuffer;
 
@@ -34,6 +39,9 @@ fn main() {
     start_coordinator_thread(receiver, window_writer, display_writer, audio_writer);
 
     start_midi_thread(sender.clone());
+
+    #[cfg(target_os = "linux")]
+    start_display(display_reader);
 
     start_audio_thread(audio_reader);
 
