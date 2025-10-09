@@ -42,26 +42,32 @@ use crate::dsp::*;
 #[repr(C)]
 pub struct BasicFm {
 	iVec0: [i32;2],
-	fButton0: F32,
-	fVec1: [F32;2],
-	iRec0: [i32;2],
-	fHslider0: F32,
 	fSampleRate: i32,
 	fConst0: F32,
-	fRec1: [F32;2],
-	fHslider1: F32,
-	fHslider2: F32,
 	fConst1: F32,
-	fRec4: [F32;2],
-	fHslider3: F32,
+	fConst2: F32,
+	fHslider0: F32,
+	fRec0: [F32;2],
+	fButton0: F32,
+	fVec1: [F32;2],
+	iRec1: [i32;2],
+	fHslider1: F32,
+	fRec2: [F32;2],
 	fRec3: [F32;2],
+	fHslider2: F32,
+	fRec7: [F32;2],
+	fConst3: F32,
+	fRec6: [F32;2],
+	fHslider3: F32,
+	fRec8: [F32;2],
+	fRec5: [F32;2],
 }
 
 pub type FaustFloat = F32;
 
 pub struct mydspSIG0 {
 	iVec2: [i32;2],
-	iRec2: [i32;2],
+	iRec4: [i32;2],
 }
 
 impl mydspSIG0 {
@@ -74,21 +80,21 @@ impl mydspSIG0 {
 	}
 	
 	pub fn instance_initmydspSIG0(&mut self, sample_rate: i32) {
-		for l4 in 0..2 {
-			self.iVec2[l4 as usize] = 0;
+		for l6 in 0..2 {
+			self.iVec2[l6 as usize] = 0;
 		}
-		for l5 in 0..2 {
-			self.iRec2[l5 as usize] = 0;
+		for l7 in 0..2 {
+			self.iRec4[l7 as usize] = 0;
 		}
 	}
 	
 	pub fn fillmydspSIG0(&mut self, count: i32, table: &mut[FaustFloat]) {
 		for i1 in 0..count {
 			self.iVec2[0] = 1;
-			self.iRec2[0] = (i32::wrapping_add(self.iVec2[1], self.iRec2[1])) % 65536;
-			table[i1 as usize] = F32::sin(9.58738e-05 * (self.iRec2[0]) as F32);
+			self.iRec4[0] = (i32::wrapping_add(self.iVec2[1], self.iRec4[1])) % 65536;
+			table[i1 as usize] = F32::sin(9.58738e-05 * (self.iRec4[0]) as F32);
 			self.iVec2[1] = self.iVec2[0];
-			self.iRec2[1] = self.iRec2[0];
+			self.iRec4[1] = self.iRec4[0];
 		}
 	}
 
@@ -98,7 +104,7 @@ impl mydspSIG0 {
 pub fn newmydspSIG0() -> mydspSIG0 { 
 	mydspSIG0 {
 		iVec2: [0;2],
-		iRec2: [0;2],
+		iRec4: [0;2],
 	}
 }
 static ftbl0mydspSIG0: std::sync::RwLock<[F32;65536]>  = std::sync::RwLock::new([0.0;65536]);
@@ -129,19 +135,25 @@ impl BasicFm {
 	pub fn new() -> BasicFm { 
 		BasicFm {
 			iVec0: [0;2],
-			fButton0: 0.0,
-			fVec1: [0.0;2],
-			iRec0: [0;2],
-			fHslider0: 0.0,
 			fSampleRate: 0,
 			fConst0: 0.0,
-			fRec1: [0.0;2],
-			fHslider1: 0.0,
-			fHslider2: 0.0,
 			fConst1: 0.0,
-			fRec4: [0.0;2],
-			fHslider3: 0.0,
+			fConst2: 0.0,
+			fHslider0: 0.0,
+			fRec0: [0.0;2],
+			fButton0: 0.0,
+			fVec1: [0.0;2],
+			iRec1: [0;2],
+			fHslider1: 0.0,
+			fRec2: [0.0;2],
 			fRec3: [0.0;2],
+			fHslider2: 0.0,
+			fRec7: [0.0;2],
+			fConst3: 0.0,
+			fRec6: [0.0;2],
+			fHslider3: 0.0,
+			fRec8: [0.0;2],
+			fRec5: [0.0;2],
 		}
 	}
 	pub fn metadata(&self, m: &mut dyn Meta) { 
@@ -165,6 +177,8 @@ impl BasicFm {
 		m.declare("oscillators.lib/version", r"1.6.0");
 		m.declare("platform.lib/name", r"Generic Platform Library");
 		m.declare("platform.lib/version", r"1.3.0");
+		m.declare("signals.lib/name", r"Faust Signal Routing Library");
+		m.declare("signals.lib/version", r"1.6.0");
 	}
 
 	pub fn get_sample_rate(&self) -> i32 { self.fSampleRate as i32}
@@ -177,8 +191,8 @@ impl BasicFm {
 		sig0.fillmydspSIG0(65536, ftbl0mydspSIG0_guard.as_mut());
 	}
 	pub fn instance_reset_params(&mut self) {
-		self.fButton0 = 0.0;
 		self.fHslider0 = 0.2;
+		self.fButton0 = 0.0;
 		self.fHslider1 = 0.2;
 		self.fHslider2 = 0.2;
 		self.fHslider3 = 0.2;
@@ -188,19 +202,31 @@ impl BasicFm {
 			self.iVec0[l0 as usize] = 0;
 		}
 		for l1 in 0..2 {
-			self.fVec1[l1 as usize] = 0.0;
+			self.fRec0[l1 as usize] = 0.0;
 		}
 		for l2 in 0..2 {
-			self.iRec0[l2 as usize] = 0;
+			self.fVec1[l2 as usize] = 0.0;
 		}
 		for l3 in 0..2 {
-			self.fRec1[l3 as usize] = 0.0;
+			self.iRec1[l3 as usize] = 0;
 		}
-		for l6 in 0..2 {
-			self.fRec4[l6 as usize] = 0.0;
+		for l4 in 0..2 {
+			self.fRec2[l4 as usize] = 0.0;
 		}
-		for l7 in 0..2 {
-			self.fRec3[l7 as usize] = 0.0;
+		for l5 in 0..2 {
+			self.fRec3[l5 as usize] = 0.0;
+		}
+		for l8 in 0..2 {
+			self.fRec7[l8 as usize] = 0.0;
+		}
+		for l9 in 0..2 {
+			self.fRec6[l9 as usize] = 0.0;
+		}
+		for l10 in 0..2 {
+			self.fRec8[l10 as usize] = 0.0;
+		}
+		for l11 in 0..2 {
+			self.fRec5[l11 as usize] = 0.0;
 		}
 	}
 	pub fn instance_constants(&mut self, sample_rate: i32) {
@@ -208,7 +234,9 @@ impl BasicFm {
 		let ftbl0mydspSIG0_guard = ftbl0mydspSIG0.read().unwrap();
 		self.fSampleRate = sample_rate;
 		self.fConst0 = F32::min(1.92e+05, F32::max(1.0, (self.fSampleRate) as F32));
-		self.fConst1 = 1.0 / self.fConst0;
+		self.fConst1 = 44.1 / self.fConst0;
+		self.fConst2 = 1.0 - self.fConst1;
+		self.fConst3 = 1.0 / self.fConst0;
 	}
 	pub fn instance_init(&mut self, sample_rate: i32) {
 		self.instance_constants(sample_rate);
@@ -273,32 +301,40 @@ impl BasicFm {
 		let [outputs0, outputs1, .. ] = outputs.as_mut() else { panic!("wrong number of output buffers"); };
 		let outputs0 = outputs0.as_mut()[..count].iter_mut();
 		let outputs1 = outputs1.as_mut()[..count].iter_mut();
-		let mut fSlow0: F32 = self.fButton0;
-		let mut iSlow1: i32 = (fSlow0 == 0.0) as i32;
-		let mut fSlow2: F32 = 1.0 / F32::max(1.0, self.fConst0 * (0.7 * self.fHslider0 + 0.1));
-		let mut fSlow3: F32 = 1.0 / F32::max(1.0, self.fConst0 * (0.19 * self.fHslider1 + 0.01));
-		let mut fSlow4: F32 = self.fConst1 * (6e+01 * self.fHslider2 + 2e+01);
-		let mut fSlow5: F32 = self.fConst1 * (1.96e+03 * self.fHslider3 + 4e+01);
+		let mut fSlow0: F32 = self.fConst1 * self.fHslider0;
+		let mut fSlow1: F32 = self.fButton0;
+		let mut iSlow2: i32 = (fSlow1 == 0.0) as i32;
+		let mut fSlow3: F32 = self.fConst1 * self.fHslider1;
+		let mut fSlow4: F32 = self.fConst1 * self.fHslider2;
+		let mut fSlow5: F32 = self.fConst1 * self.fHslider3;
 		let zipped_iterators = outputs0.zip(outputs1);
 		for (output0, output1) in zipped_iterators {
 			self.iVec0[0] = 1;
-			self.fVec1[0] = fSlow0;
-			self.iRec0[0] = i32::wrapping_mul(iSlow1, i32::wrapping_add(self.iRec0[1], 1));
-			self.fRec1[0] = fSlow0 + self.fRec1[1] * ((self.fVec1[1] >= fSlow0) as i32) as u32 as F32;
+			self.fRec0[0] = fSlow0 + self.fConst2 * self.fRec0[1];
+			self.fVec1[0] = fSlow1;
+			self.iRec1[0] = i32::wrapping_mul(iSlow2, i32::wrapping_add(self.iRec1[1], 1));
+			self.fRec2[0] = fSlow3 + self.fConst2 * self.fRec2[1];
+			self.fRec3[0] = fSlow1 + self.fRec3[1] * ((self.fVec1[1] >= fSlow1) as i32) as u32 as F32;
 			let mut iTemp0: i32 = i32::wrapping_sub(1, self.iVec0[1]);
-			let mut fTemp1: F32 = (if iTemp0 != 0 {0.0} else {fSlow4 + self.fRec4[1]});
-			self.fRec4[0] = fTemp1 - F32::floor(fTemp1);
-			let mut fTemp2: F32 = (if iTemp0 != 0 {0.0} else {self.fRec3[1] + fSlow5 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec4[0]) as i32, 65535))) as usize]});
-			self.fRec3[0] = fTemp2 - F32::floor(fTemp2);
-			let mut fTemp3: F32 = 0.2 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec3[0]) as i32, 65535))) as usize] * F32::max(0.0, F32::min(fSlow3 * self.fRec1[0], 1.0) * (1.0 - fSlow2 * (self.iRec0[0]) as F32));
+			self.fRec7[0] = fSlow4 + self.fConst2 * self.fRec7[1];
+			let mut fTemp1: F32 = (if iTemp0 != 0 {0.0} else {self.fRec6[1] + self.fConst3 * (6e+01 * self.fRec7[0] + 2e+01)});
+			self.fRec6[0] = fTemp1 - F32::floor(fTemp1);
+			self.fRec8[0] = fSlow5 + self.fConst2 * self.fRec8[1];
+			let mut fTemp2: F32 = (if iTemp0 != 0 {0.0} else {self.fRec5[1] + self.fConst3 * (1.96e+03 * self.fRec8[0] + 4e+01) * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec6[0]) as i32, 65535))) as usize]});
+			self.fRec5[0] = fTemp2 - F32::floor(fTemp2);
+			let mut fTemp3: F32 = 0.2 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec5[0]) as i32, 65535))) as usize] * F32::max(0.0, F32::min(self.fRec3[0] / F32::max(1.0, self.fConst0 * (0.19 * self.fRec2[0] + 0.01)), 1.0) * (1.0 - (self.iRec1[0]) as F32 / F32::max(1.0, self.fConst0 * (0.7 * self.fRec0[0] + 0.1))));
 			*output0 = fTemp3;
 			*output1 = fTemp3;
 			self.iVec0[1] = self.iVec0[0];
+			self.fRec0[1] = self.fRec0[0];
 			self.fVec1[1] = self.fVec1[0];
-			self.iRec0[1] = self.iRec0[0];
-			self.fRec1[1] = self.fRec1[0];
-			self.fRec4[1] = self.fRec4[0];
+			self.iRec1[1] = self.iRec1[0];
+			self.fRec2[1] = self.fRec2[0];
 			self.fRec3[1] = self.fRec3[0];
+			self.fRec7[1] = self.fRec7[0];
+			self.fRec6[1] = self.fRec6[0];
+			self.fRec8[1] = self.fRec8[0];
+			self.fRec5[1] = self.fRec5[0];
 		}
 		
 	}

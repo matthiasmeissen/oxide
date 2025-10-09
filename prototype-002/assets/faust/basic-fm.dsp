@@ -4,10 +4,10 @@ import("stdfaust.lib");
 map(x, out_min, out_max) = x * (out_max - out_min) + out_min;
 
 // Input CV
-v0 = hslider("[0] Freq", 0.2, 0.0, 1.0, 0.01);
-v1 = hslider("[1] Mod", 0.2, 0.0, 1.0, 0.01);
-v2 = hslider("[2] Attack", 0.2, 0.0, 1.0, 0.01);
-v3 = hslider("[3] Release", 0.2, 0.0, 1.0, 0.01);
+v0 = hslider("[0] Freq", 0.2, 0.0, 1.0, 0.01) : si.smoo;
+v1 = hslider("[1] Mod", 0.2, 0.0, 1.0, 0.01) : si.smoo;
+v2 = hslider("[2] Attack", 0.2, 0.0, 1.0, 0.01) : si.smoo;
+v3 = hslider("[3] Release", 0.2, 0.0, 1.0, 0.01) : si.smoo;
 v4 = button("[4] Trigger");
 
 
