@@ -1,6 +1,6 @@
 #![cfg(target_os = "linux")]
 
-use crate::modules::{state::*, screens::*};
+use crate::{state::*, screens::*};
 
 use sh1106::{prelude::*, Builder};
 use linux_embedded_hal::I2cdev;
