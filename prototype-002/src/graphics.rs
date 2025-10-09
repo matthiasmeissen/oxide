@@ -261,11 +261,14 @@ impl EventHandler for Stage {
             KeyCode::F => {
                 self.is_fullscreen = !self.is_fullscreen;
                 window::set_fullscreen(self.is_fullscreen);
-            }
+            },
             KeyCode::Right => {
                 let next_index = self.current_shader_index + 1;
                 self.sender.try_send(Message::SetShaderIndex(next_index)).ok();
             },
+            KeyCode::Escape => {
+                std::process::exit(0);
+            }
             _ => (),
         }
     }
