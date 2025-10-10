@@ -42,10 +42,23 @@ use crate::dsp::*;
 #[repr(C)]
 pub struct SimpleSine {
 	iVec1: [i32;2],
-	fHslider0: F32,
 	fSampleRate: i32,
 	fConst0: F32,
+	fConst1: F32,
+	fConst2: F32,
+	fHslider0: F32,
+	fRec2: [F32;2],
+	fConst3: F32,
 	fRec1: [F32;2],
+	fHslider1: F32,
+	fRec4: [F32;2],
+	fRec3: [F32;2],
+	fHslider2: F32,
+	fRec6: [F32;2],
+	fRec5: [F32;2],
+	fHslider3: F32,
+	fRec8: [F32;2],
+	fRec7: [F32;2],
 }
 
 pub type FaustFloat = F32;
@@ -111,7 +124,7 @@ fn rint_f32(val: f32) -> f32 {
 
 pub const FAUST_INPUTS: usize = 0;
 pub const FAUST_OUTPUTS: usize = 2;
-pub const FAUST_ACTIVES: usize = 1;
+pub const FAUST_ACTIVES: usize = 4;
 pub const FAUST_PASSIVES: usize = 0;
 
 
@@ -120,10 +133,23 @@ impl SimpleSine {
 	pub fn new() -> SimpleSine { 
 		SimpleSine {
 			iVec1: [0;2],
-			fHslider0: 0.0,
 			fSampleRate: 0,
 			fConst0: 0.0,
+			fConst1: 0.0,
+			fConst2: 0.0,
+			fHslider0: 0.0,
+			fRec2: [0.0;2],
+			fConst3: 0.0,
 			fRec1: [0.0;2],
+			fHslider1: 0.0,
+			fRec4: [0.0;2],
+			fRec3: [0.0;2],
+			fHslider2: 0.0,
+			fRec6: [0.0;2],
+			fRec5: [0.0;2],
+			fHslider3: 0.0,
+			fRec8: [0.0;2],
+			fRec7: [0.0;2],
 		}
 	}
 	pub fn metadata(&self, m: &mut dyn Meta) { 
@@ -141,6 +167,8 @@ impl SimpleSine {
 		m.declare("oscillators.lib/version", r"1.6.0");
 		m.declare("platform.lib/name", r"Generic Platform Library");
 		m.declare("platform.lib/version", r"1.3.0");
+		m.declare("signals.lib/name", r"Faust Signal Routing Library");
+		m.declare("signals.lib/version", r"1.6.0");
 	}
 
 	pub fn get_sample_rate(&self) -> i32 { self.fSampleRate as i32}
@@ -153,21 +181,48 @@ impl SimpleSine {
 		sig0.fillmydspSIG0(65536, ftbl0mydspSIG0_guard.as_mut());
 	}
 	pub fn instance_reset_params(&mut self) {
-		self.fHslider0 = 4.4e+02;
+		self.fHslider0 = 0.2;
+		self.fHslider1 = 0.2;
+		self.fHslider2 = 0.2;
+		self.fHslider3 = 0.2;
 	}
 	pub fn instance_clear(&mut self) {
 		for l2 in 0..2 {
 			self.iVec1[l2 as usize] = 0;
 		}
 		for l3 in 0..2 {
-			self.fRec1[l3 as usize] = 0.0;
+			self.fRec2[l3 as usize] = 0.0;
+		}
+		for l4 in 0..2 {
+			self.fRec1[l4 as usize] = 0.0;
+		}
+		for l5 in 0..2 {
+			self.fRec4[l5 as usize] = 0.0;
+		}
+		for l6 in 0..2 {
+			self.fRec3[l6 as usize] = 0.0;
+		}
+		for l7 in 0..2 {
+			self.fRec6[l7 as usize] = 0.0;
+		}
+		for l8 in 0..2 {
+			self.fRec5[l8 as usize] = 0.0;
+		}
+		for l9 in 0..2 {
+			self.fRec8[l9 as usize] = 0.0;
+		}
+		for l10 in 0..2 {
+			self.fRec7[l10 as usize] = 0.0;
 		}
 	}
 	pub fn instance_constants(&mut self, sample_rate: i32) {
 		// Obtaining locks on 1 static var(s)
 		let ftbl0mydspSIG0_guard = ftbl0mydspSIG0.read().unwrap();
 		self.fSampleRate = sample_rate;
-		self.fConst0 = 1.0 / F32::min(1.92e+05, F32::max(1.0, (self.fSampleRate) as F32));
+		self.fConst0 = F32::min(1.92e+05, F32::max(1.0, (self.fSampleRate) as F32));
+		self.fConst1 = 44.1 / self.fConst0;
+		self.fConst2 = 1.0 - self.fConst1;
+		self.fConst3 = 1.0 / self.fConst0;
 	}
 	pub fn instance_init(&mut self, sample_rate: i32) {
 		self.instance_constants(sample_rate);
@@ -185,20 +240,33 @@ impl SimpleSine {
 	
 	pub fn build_user_interface_static(ui_interface: &mut dyn UI<FaustFloat>) {
 		ui_interface.open_vertical_box("simple_sine");
-		ui_interface.add_horizontal_slider("freq", ParamIndex(0), 4.4e+02, 4e+01, 2e+03, 1.0);
+		ui_interface.declare(Some(ParamIndex(0)), "0", "");
+		ui_interface.add_horizontal_slider("Osc1", ParamIndex(0), 0.2, 0.0, 1.0, 0.01);
+		ui_interface.declare(Some(ParamIndex(1)), "1", "");
+		ui_interface.add_horizontal_slider("Osc2", ParamIndex(1), 0.2, 0.0, 1.0, 0.01);
+		ui_interface.declare(Some(ParamIndex(2)), "2", "");
+		ui_interface.add_horizontal_slider("Osc3", ParamIndex(2), 0.2, 0.0, 1.0, 0.01);
+		ui_interface.declare(Some(ParamIndex(3)), "3", "");
+		ui_interface.add_horizontal_slider("Osc4", ParamIndex(3), 0.2, 0.0, 1.0, 0.01);
 		ui_interface.close_box();
 	}
 	
 	pub fn get_param(&self, param: ParamIndex) -> Option<FaustFloat> {
 		match param.0 {
-			0 => Some(self.fHslider0),
+			3 => Some(self.fHslider0),
+			2 => Some(self.fHslider1),
+			1 => Some(self.fHslider2),
+			0 => Some(self.fHslider3),
 			_ => None,
 		}
 	}
 	
 	pub fn set_param(&mut self, param: ParamIndex, value: FaustFloat) {
 		match param.0 {
-			0 => { self.fHslider0 = value }
+			3 => { self.fHslider0 = value }
+			2 => { self.fHslider1 = value }
+			1 => { self.fHslider2 = value }
+			0 => { self.fHslider3 = value }
 			_ => {}
 		}
 	}
@@ -215,17 +283,38 @@ impl SimpleSine {
 		let [outputs0, outputs1, .. ] = outputs.as_mut() else { panic!("wrong number of output buffers"); };
 		let outputs0 = outputs0.as_mut()[..count].iter_mut();
 		let outputs1 = outputs1.as_mut()[..count].iter_mut();
-		let mut fSlow0: F32 = self.fConst0 * self.fHslider0;
+		let mut fSlow0: F32 = self.fConst1 * self.fHslider0;
+		let mut fSlow1: F32 = self.fConst1 * self.fHslider1;
+		let mut fSlow2: F32 = self.fConst1 * self.fHslider2;
+		let mut fSlow3: F32 = self.fConst1 * self.fHslider3;
 		let zipped_iterators = outputs0.zip(outputs1);
 		for (output0, output1) in zipped_iterators {
 			self.iVec1[0] = 1;
-			let mut fTemp0: F32 = (if i32::wrapping_sub(1, self.iVec1[1]) != 0 {0.0} else {fSlow0 + self.fRec1[1]});
-			self.fRec1[0] = fTemp0 - F32::floor(fTemp0);
-			let mut fTemp1: F32 = 0.2 * ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec1[0]) as i32, 65535))) as usize];
-			*output0 = fTemp1;
-			*output1 = fTemp1;
+			let mut iTemp0: i32 = i32::wrapping_sub(1, self.iVec1[1]);
+			self.fRec2[0] = fSlow0 + self.fConst2 * self.fRec2[1];
+			let mut fTemp1: F32 = (if iTemp0 != 0 {0.0} else {self.fRec1[1] + self.fConst3 * (2e+01 * F32::exp(3.6888795 * self.fRec2[0]) + 4e+01)});
+			self.fRec1[0] = fTemp1 - F32::floor(fTemp1);
+			self.fRec4[0] = fSlow1 + self.fConst2 * self.fRec4[1];
+			let mut fTemp2: F32 = (if iTemp0 != 0 {0.0} else {self.fRec3[1] + self.fConst3 * (2e+01 * F32::exp(3.6888795 * self.fRec4[0]) + 4e+01)});
+			self.fRec3[0] = fTemp2 - F32::floor(fTemp2);
+			self.fRec6[0] = fSlow2 + self.fConst2 * self.fRec6[1];
+			let mut fTemp3: F32 = (if iTemp0 != 0 {0.0} else {self.fRec5[1] + self.fConst3 * (2e+01 * F32::exp(3.6888795 * self.fRec6[0]) + 4e+01)});
+			self.fRec5[0] = fTemp3 - F32::floor(fTemp3);
+			self.fRec8[0] = fSlow3 + self.fConst2 * self.fRec8[1];
+			let mut fTemp4: F32 = (if iTemp0 != 0 {0.0} else {self.fRec7[1] + self.fConst3 * (2e+01 * F32::exp(3.6888795 * self.fRec8[0]) + 4e+01)});
+			self.fRec7[0] = fTemp4 - F32::floor(fTemp4);
+			let mut fTemp5: F32 = 0.1 * (ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec7[0]) as i32, 65535))) as usize] + ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec5[0]) as i32, 65535))) as usize] + ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec3[0]) as i32, 65535))) as usize] + ftbl0mydspSIG0_guard[(std::cmp::max(0, std::cmp::min((65536.0 * self.fRec1[0]) as i32, 65535))) as usize]);
+			*output0 = fTemp5;
+			*output1 = fTemp5;
 			self.iVec1[1] = self.iVec1[0];
+			self.fRec2[1] = self.fRec2[0];
 			self.fRec1[1] = self.fRec1[0];
+			self.fRec4[1] = self.fRec4[0];
+			self.fRec3[1] = self.fRec3[0];
+			self.fRec6[1] = self.fRec6[0];
+			self.fRec5[1] = self.fRec5[0];
+			self.fRec8[1] = self.fRec8[0];
+			self.fRec7[1] = self.fRec7[0];
 		}
 		
 	}
