@@ -71,10 +71,11 @@ pub fn start_audio_thread(mut audio_reader: Output<State>) {
                     }
                 }
 
-                dsp.set_param(ParamIndex(0), state.values[0]);
-                dsp.set_param(ParamIndex(1), state.values[1]);
-                dsp.set_param(ParamIndex(4), state.values[4]);
-                dsp.set_param(ParamIndex(5), state.values[5]);
+                for (i, &value) in state.values.iter().enumerate() {
+                    if i < 8 {
+                        dsp.set_param(ParamIndex(i as i32), value);
+                    }
+                }
     
                 let mut dsp_output_slices: Vec<&mut [f32]> = dsp_output_buffers.iter_mut().map(|buf| &mut buf[..num_frames]).collect();
     
