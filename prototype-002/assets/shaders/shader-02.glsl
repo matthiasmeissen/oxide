@@ -21,6 +21,8 @@ void main() {
     vec2 uv = v_uv;
     vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
 
+    p.x = mix(p.x, p.x * p.y, u_gate2);
+
     float size = mix(0.4, 2.0, u_cv1);
     float s1 = mix(2.0, 10.0, u_cv2);
     float s2 = mix(4.0, 20.0, u_cv3);
@@ -32,7 +34,11 @@ void main() {
 
     float d = distance(p, vec2(cos(p2.x * s1), p.y)) * distance(p1, vec2(p.x, sin(p.y * s2)));
 
-    d = step(u_cv4, d);
+    d = mix(d, d * distance(p1, vec2(cos(p2.y * s1), p.x)), u_gate3);
+
+    float d1 = step(u_cv4, d);
+    float d2 = step(u_cv4, d) - step(u_cv4, d - 0.1);
+    d = mix(d1, 1.0 - d2, u_gate4);
 
     d = mix(d, 1.0 - d, u_gate1);
 
