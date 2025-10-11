@@ -7,7 +7,7 @@ use midir::*;
 
 pub fn start_midi_thread(midi_sender: Sender<Message>) {
     thread::spawn(move || {
-        let mut midi_in = MidiInput::new("Midi Input 1").unwrap();
+        let mut midi_in = MidiInput::new("Midi Input").unwrap();
         midi_in.ignore(Ignore::None);
 
         let in_ports = midi_in.ports();
@@ -17,15 +17,26 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
             return;
         }
 
-        let target_names = ["OP-Z", "Launch Control XL"];
+        let target_names = ["OP-Z", "Launch Control XL", "Deluge IN"];
         let target_port = in_ports.iter().find(|p| {
             let port_name = midi_in.port_name(p).unwrap_or_default();
             target_names.iter().any(|&name| port_name.contains(name))
         });
 
+        let mut midi_device = MidiDevice::Undefined;
+
         let port = match target_port {
             Some(p) => {
-                println!("Automatically connected to port: {}", midi_in.port_name(p).unwrap());
+                let port_name = midi_in.port_name(p).unwrap();
+                println!("Automatically connected to port: {}", port_name);
+
+                if port_name.contains("OP-Z") {
+                    midi_device = MidiDevice::OPZ;
+                } else if port_name.contains("Launch Control XL") {
+                    midi_device = MidiDevice::LaunchControlXL;
+                } else if port_name.contains("Deluge IN") {
+                    midi_device = MidiDevice::Deluge;
+                }
                 p
             },
             None => {
@@ -47,8 +58,8 @@ pub fn start_midi_thread(midi_sender: Sender<Message>) {
         let _connection = midi_in.connect(
             port, "Midi Input", move |_timestamp, message, _| {
                 if let Some(parsed_message) = parse_midi_message(message) {
-                    //println!("MIDI parsed: {:?}", parsed_message);
-                    midi_sender.try_send(Message::MidiInput(parsed_message)).ok();
+                    println!("MIDI parsed: {:?}", parsed_message);
+                    midi_sender.try_send(Message::MidiInput(midi_device, parsed_message)).ok();
                 }
             }, ()
         ).unwrap();

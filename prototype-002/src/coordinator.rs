@@ -45,48 +45,85 @@ pub fn start_coordinator_thread(
                     current_state.dsp_type = dt;
                     println!("Dt is now: {:?}", dt);
                 }
-                Message::MidiInput(midi) => match midi {
+                Message::MidiInput(device, midi) => match midi {
                     MidiMessage::ControlChange { controller, value } => {
-                        // From Novation
-                        if controller == 77 { current_state.values[0] = normalize_midi(value); }
-                        if controller == 78 { current_state.values[1] = normalize_midi(value); }
-                        if controller == 79 { current_state.values[2] = normalize_midi(value); }
-                        if controller == 80 { current_state.values[3] = normalize_midi(value); }
-
-                        // From OP-Z
-                        if controller == 1 { current_state.values[0] = normalize_midi(value); }
-                        if controller == 2 { current_state.values[1] = normalize_midi(value); }
-                        if controller == 3 { current_state.values[2] = normalize_midi(value); }
-                        if controller == 4 { current_state.values[3] = normalize_midi(value); }
-
+                        match device {
+                            MidiDevice::LaunchControlXL => {
+                                // From Novation
+                                if controller == 77 { current_state.values[0] = normalize_midi(value); }
+                                if controller == 78 { current_state.values[1] = normalize_midi(value); }
+                                if controller == 79 { current_state.values[2] = normalize_midi(value); }
+                                if controller == 80 { current_state.values[3] = normalize_midi(value); }
+                            },
+                            MidiDevice::OPZ => {
+                                // From OP-Z
+                                if controller == 1 { current_state.values[0] = normalize_midi(value); }
+                                if controller == 2 { current_state.values[1] = normalize_midi(value); }
+                                if controller == 3 { current_state.values[2] = normalize_midi(value); }
+                                if controller == 4 { current_state.values[3] = normalize_midi(value); }
+                            }
+                            MidiDevice::Deluge => {
+                                if controller == 0 { current_state.values[0] = normalize_midi(value); }
+                                if controller == 1 { current_state.values[1] = normalize_midi(value); }
+                                if controller == 2 { current_state.values[2] = normalize_midi(value); }
+                                if controller == 3 { current_state.values[3] = normalize_midi(value); }
+                            }
+                            _ => ()
+                        }
                         //println!("{:?}", current_state);
                     }
                     MidiMessage::NoteOn { note, .. } => {
-                        // From Novation
-                        if note == 73 { current_state.values[4] = 1.0 }
-                        if note == 74 { current_state.values[5] = 1.0 }
-                        if note == 75 { current_state.values[6] = 1.0 }
-                        if note == 76 { current_state.values[7] = 1.0 }
+                        match device {
+                            MidiDevice::LaunchControlXL => {
+                                // From Novation
+                                if note == 73 { current_state.values[4] = 1.0 }
+                                if note == 74 { current_state.values[5] = 1.0 }
+                                if note == 75 { current_state.values[6] = 1.0 }
+                                if note == 76 { current_state.values[7] = 1.0 }
+        
+                                if note == 41 { current_state.shader_index = 0 }
+                                if note == 42 { current_state.shader_index = 1 }
+        
+                                if note == 59 { current_state.screen_index = 0 }
+                                if note == 60 { current_state.screen_index = 1 }
+                            },
+                            MidiDevice::OPZ => {
+                                // From OP-Z
+                                if note == 53 { current_state.values[4] = 1.0 }
+                                if note == 54 { current_state.shader_index += 1 }
+                            },
+                            MidiDevice::Deluge => {
+                                if note == 60 { current_state.values[4] = 1.0 }
+                                if note == 62 { current_state.values[5] = 1.0 }
+                                if note == 64 { current_state.values[6] = 1.0 }
+                                if note == 65 { current_state.values[7] = 1.0 }
+                            }
+                            _ => ()
+                        }
 
-                        if note == 41 { current_state.shader_index = 0 }
-                        if note == 42 { current_state.shader_index = 1 }
-
-                        if note == 59 { current_state.screen_index = 0 }
-                        if note == 60 { current_state.screen_index = 1 }
-
-                        // From OP-Z
-                        if note == 53 { current_state.values[4] = 1.0 }
-                        if note == 54 { current_state.shader_index += 1 }
                     }
                     MidiMessage::NoteOff { note } => {
-                        // From Novation
-                        if note == 73 { current_state.values[4] = 0.0 }
-                        if note == 74 { current_state.values[5] = 0.0 }
-                        if note == 75 { current_state.values[6] = 0.0 }
-                        if note == 76 { current_state.values[7] = 0.0 }
+                        match device {
+                            MidiDevice::LaunchControlXL => {
+                                // From Novation
+                                if note == 73 { current_state.values[4] = 0.0 }
+                                if note == 74 { current_state.values[5] = 0.0 }
+                                if note == 75 { current_state.values[6] = 0.0 }
+                                if note == 76 { current_state.values[7] = 0.0 }
+                            },
+                            MidiDevice::OPZ => {
+                                // From OP-Z
+                                if note == 53 { current_state.values[4] = 0.0 }
+                            },
+                            MidiDevice::Deluge => {
+                                if note == 60 { current_state.values[4] = 0.0 }
+                                if note == 62 { current_state.values[5] = 0.0 }
+                                if note == 64 { current_state.values[6] = 0.0 }
+                                if note == 65 { current_state.values[7] = 0.0 }
+                            }
+                            _ => ()
+                        }
 
-                        // From OP-Z
-                        if note == 53 { current_state.values[4] = 0.0 }
                     }
                 },
             }
