@@ -1,0 +1,10 @@
+[package]
+name = "audio-faust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cpal = "0.16.0"
+crossbeam-channel = "0.5.15"
+triple_buffer = "8.1.1"
+miniquad = "0.4.8"
