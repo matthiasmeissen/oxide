@@ -18,6 +18,9 @@ const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bm
 const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/shader-frame-001.bmp");
 const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
 
+const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
+const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
+
 pub fn draw<T>(display: &mut T, state: &DisplayState)
 where
     T: DrawTarget<Color = BinaryColor>,
@@ -63,9 +66,9 @@ where
     T::Error: Debug,
 {
     let fps = format!("FPS: {:.2}", state.fps);
-    comp_text(display, Point { x: 20, y: 0 }, fps);
+    comp_text(display, Point { x: 20, y: 0 }, &fps);
     let i = format!("Index: {}", index);
-    comp_text(display, Point { x: 20, y: 20 }, i);
+    comp_text(display, Point { x: 20, y: 20 }, &i);
 }
 
 fn screen_shader<T>(display: &mut T, state: &State)
@@ -73,7 +76,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, String::from("Shader"));
+    comp_text(display, Point { x: 20, y: 0 }, "Shader");
 }
 
 fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
@@ -81,9 +84,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, String::from("Shader Select"));
-    let i = format!("Index: {}", index);
-    comp_text(display, Point { x: 20, y: 20 }, i);
+    comp_select_list(display, index, SHADER_NAMES);
 }
 
 fn screen_audio<T>(display: &mut T, state: &State)
@@ -91,7 +92,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, String::from("Audio"));
+    comp_text(display, Point { x: 20, y: 0 }, "Audio");
 }
 
 fn screen_audio_select<T>(display: &mut T, state: &State, index: usize)
@@ -99,12 +100,12 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, String::from("Audio Select"));
+    comp_select_list(display, index, DSP_NAMES);
 }
 
 // -------- Components --------
 
-fn comp_text<T>(display: &mut T, position: Point, text: String)
+fn comp_text<T>(display: &mut T, position: Point, text: &str)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -117,6 +118,20 @@ where
 
     Text::with_text_style(&text, position, character_style, text_style)
         .draw(display).unwrap();
+}
+
+fn comp_select_list<T>(display: &mut T, index: usize, list: &[&str])
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    for (i, item) in list.iter().enumerate() {
+        let offset_y = i as i32 * 8;
+        if i == index {
+            comp_text(display, Point { x: 0, y: offset_y }, ">");
+        }
+        comp_text(display, Point { x: 20, y: offset_y }, item);
+    }
 }
 
 fn comp_graphic_sprite<T>(display: &mut T, position: Point, val: f32)

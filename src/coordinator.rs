@@ -5,6 +5,7 @@ use crossbeam_channel::Receiver;
 use triple_buffer::*;
 
 const NUM_SHADERS: usize = 3;
+const NUM_DSP: usize = 3;
 
 struct Coordinator {
     app_state: State,
@@ -81,7 +82,10 @@ impl Coordinator {
                     selected_index = (selected_index + NUM_SHADERS - 1) % NUM_SHADERS;
                     Screen::ShaderSelect { selected_index }
                 },
-                InputEvent::Enter => Screen::Shader,
+                InputEvent::Enter => {
+                    self.app_state.shader_index = selected_index;
+                    Screen::Shader
+                },
             }
             Screen::Audio => match event {
                 InputEvent::Next => Screen::Home,
@@ -89,9 +93,24 @@ impl Coordinator {
                 InputEvent::Enter => Screen::AudioSelect {selected_index: 0},
             }
             Screen::AudioSelect { mut selected_index} => match event {
-                InputEvent::Next => {println!("Next"); Screen::Audio},
-                InputEvent::Prev => {println!("Prev"); Screen::Audio},
-                InputEvent::Enter => Screen::Audio,
+                InputEvent::Next => {
+                    selected_index = (selected_index + 1) % NUM_DSP;
+                    Screen::AudioSelect { selected_index }
+                },
+                InputEvent::Prev => {
+                    selected_index = (selected_index + NUM_DSP - 1) % NUM_DSP;
+                    Screen::AudioSelect { selected_index }
+                },
+                InputEvent::Enter => {
+                    self.app_state.dsp_type = match selected_index {
+                        0 => DspType::SimpleSine,
+                        1 => DspType::BasicFm,
+                        2 => DspType::DrumEngine,
+                        _ => self.app_state.dsp_type,
+                    };
+
+                    Screen::Audio
+                },
             }
         };
 
