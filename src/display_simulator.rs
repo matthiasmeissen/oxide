@@ -9,11 +9,12 @@ use embedded_graphics::{
 use embedded_graphics_simulator::*;
 use embedded_graphics_simulator::sdl2::Keycode;
 
+use crossbeam_channel::Sender;
 use triple_buffer::*;
 
 use std::{thread, time::Duration};
 
-pub fn start_display_simulator(mut display_reader: Output<State>) {
+pub fn start_display_simulator(display_sender: Sender<Message>, mut display_reader: Output<DisplayState>) {
     let mut display: SimulatorDisplay<BinaryColor> = SimulatorDisplay::new(Size::new(128, 64));
     let output_settings = OutputSettingsBuilder::new()
         .theme(BinaryColorTheme::OledWhite)
@@ -35,12 +36,12 @@ pub fn start_display_simulator(mut display_reader: Output<State>) {
                 SimulatorEvent::Quit => break 'running,
                 SimulatorEvent::KeyDown { keycode, .. } => {
                     match keycode {
-                        Keycode::Left => {println!("Left")},
-                        Keycode::Right => {println!("Right")},
-                        Keycode::Up => {println!("Up")},
-                        Keycode::Down => {println!("Down")},
-                        Keycode::SPACE => {println!("Space")},
-                        _ => (),
+                        Keycode::Right => {display_sender.try_send(Message::UiInput(InputEvent::Next)).ok()},
+                        Keycode::Down => {display_sender.try_send(Message::UiInput(InputEvent::Next)).ok()},
+                        Keycode::Left => {display_sender.try_send(Message::UiInput(InputEvent::Prev)).ok()},
+                        Keycode::Up => {display_sender.try_send(Message::UiInput(InputEvent::Prev)).ok()},
+                        Keycode::SPACE => {display_sender.try_send(Message::UiInput(InputEvent::Enter)).ok()},
+                        _ => Some(()),
                     };
                 }
                 _ => {}

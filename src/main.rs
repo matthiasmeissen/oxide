@@ -41,7 +41,7 @@ fn main() {
 
     let (sender, receiver) = crossbeam_channel::bounded(5);
     let (window_writer, window_reader) = TripleBuffer::new(&State::default()).split();
-    let (display_writer, display_reader) = TripleBuffer::new(&State::default()).split();
+    let (display_writer, display_reader) = TripleBuffer::new(&DisplayState::default()).split();
     let (audio_writer, audio_reader) = TripleBuffer::new(&State::default()).split();
 
     start_coordinator_thread(receiver, window_writer, display_writer, audio_writer);
@@ -51,7 +51,7 @@ fn main() {
     #[cfg(feature = "simulator")]
     {
         println!("Running with display simulator");
-        start_display_simulator(display_reader);
+        start_display_simulator(sender.clone(), display_reader);
     }
 
     #[cfg(not(feature = "simulator"))]

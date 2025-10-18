@@ -18,37 +18,93 @@ const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bm
 const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/shader-frame-001.bmp");
 const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
 
-pub fn draw<T>(display: &mut T, state: &State)
+pub fn draw<T>(display: &mut T, state: &DisplayState)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    draw_home(display, state);
+    match state.ui {
+        Screen::Home => screen_home(display, &state.app),
+        Screen::HomeSettings {selected_index} => screen_home_settings(display, &state.app, selected_index),
+        Screen::Shader => screen_shader(display, &state.app),
+        Screen::ShaderSelect {selected_index} => screen_shader_select(display, &state.app, selected_index),
+        Screen::Audio => screen_audio(display, &state.app),
+        Screen::AudioSelect {selected_index} => screen_audio_select(display, &state.app, selected_index),
+    }
 }
 
-fn draw_home<T>(display: &mut T, state: &State)
+// -------- Screens --------
+
+fn screen_home<T>(display: &mut T, state: &State)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    draw_trigger(display, Point::new(24, 1), state.values[4] as f32);
-    draw_trigger(display, Point::new(24 + 27, 1), state.values[5] as f32);
-    draw_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32);
-    draw_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32);
+    comp_trigger(display, Point::new(24, 1), state.values[4] as f32);
+    comp_trigger(display, Point::new(24 + 27, 1), state.values[5] as f32);
+    comp_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32);
+    comp_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32);
 
-    draw_rounded(display);
+    comp_rounded(display);
 
-    draw_bar(display, Point::new(24, 13), state.values[0] as f32, "CV1");
-    draw_bar(display, Point::new(24 + 27, 13), state.values[1] as f32, "CV2");
-    draw_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3");
-    draw_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4");
+    comp_bar(display, Point::new(24, 13), state.values[0] as f32, "CV1");
+    comp_bar(display, Point::new(24 + 27, 13), state.values[1] as f32, "CV2");
+    comp_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3");
+    comp_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4");
 
-    draw_shader_frame(display, Point::new(0, 0), state.shader_index + 1);
+    comp_shader_frame(display, Point::new(0, 0), state.shader_index + 1);
 
-    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
+    comp_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
 }
 
-pub fn draw_debug<T>(display: &mut T, state: &State)
+fn screen_home_settings<T>(display: &mut T, state: &State, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    let fps = format!("FPS: {:.2}", state.fps);
+    comp_text(display, Point { x: 20, y: 0 }, fps);
+    let i = format!("Index: {}", index);
+    comp_text(display, Point { x: 20, y: 20 }, i);
+}
+
+fn screen_shader<T>(display: &mut T, state: &State)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_text(display, Point { x: 20, y: 0 }, String::from("Shader"));
+}
+
+fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_text(display, Point { x: 20, y: 0 }, String::from("Shader Select"));
+    let i = format!("Index: {}", index);
+    comp_text(display, Point { x: 20, y: 20 }, i);
+}
+
+fn screen_audio<T>(display: &mut T, state: &State)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_text(display, Point { x: 20, y: 0 }, String::from("Audio"));
+}
+
+fn screen_audio_select<T>(display: &mut T, state: &State, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_text(display, Point { x: 20, y: 0 }, String::from("Audio Select"));
+}
+
+// -------- Components --------
+
+fn comp_text<T>(display: &mut T, position: Point, text: String)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -59,14 +115,11 @@ where
         .alignment(embedded_graphics::text::Alignment::Left)
         .build();
 
-    let fps = format!("FPS: {:.2}", state.fps);
-    Text::with_text_style(&fps, Point::new(32, 2), character_style, text_style)
+    Text::with_text_style(&text, position, character_style, text_style)
         .draw(display).unwrap();
-
-    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
 }
 
-fn draw_graphic_sprite<T>(display: &mut T, position: Point, val: f32)
+fn comp_graphic_sprite<T>(display: &mut T, position: Point, val: f32)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -84,7 +137,7 @@ where
     Image::new(&image, position).draw(display).unwrap();
 }
 
-fn draw_trigger<T>(display: &mut T, position: Point, val: f32)
+fn comp_trigger<T>(display: &mut T, position: Point, val: f32)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -105,7 +158,7 @@ where
     Image::new(&image, position).draw(display).unwrap();
 }
 
-fn draw_shader_frame<T>(display: &mut T, position: Point, index: usize)
+fn comp_shader_frame<T>(display: &mut T, position: Point, index: usize)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -125,7 +178,7 @@ where
         .draw(display).unwrap();
 }
 
-fn draw_rounded<T>(display: &mut T)
+fn comp_rounded<T>(display: &mut T)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -148,7 +201,7 @@ where
 }
 
 
-fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str)
+fn comp_bar<T>(display: &mut T, position: Point, val: f32, label: &str)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
