@@ -30,7 +30,7 @@ impl Coordinator {
                 Message::SetShaderIndex(i) => self.app_state.shader_index = i,
                 Message::SetFps(fps) => self.app_state.fps = fps,
                 Message::SetDspType(dt) => self.app_state.dsp_type = dt,
-                Message::UiInput(event) => {println!("Test: {:?}", event); self.handle_ui_input(event)},
+                Message::UiInput(event) => self.handle_ui_input(event),
                 Message::MidiInput(device, midi) => self.handle_midi_input(device, midi),
             }
 
@@ -71,7 +71,7 @@ impl Coordinator {
             Screen::Shader => match event {
                 InputEvent::Next => Screen::Audio,
                 InputEvent::Prev => Screen::Home,
-                InputEvent::Enter => Screen::ShaderSelect {selected_index: 0},
+                InputEvent::Enter => Screen::ShaderSelect {selected_index: self.app_state.shader_index},
             }
             Screen::ShaderSelect { mut selected_index} => match event {
                 InputEvent::Next => {
@@ -90,7 +90,15 @@ impl Coordinator {
             Screen::Audio => match event {
                 InputEvent::Next => Screen::Home,
                 InputEvent::Prev => Screen::Shader,
-                InputEvent::Enter => Screen::AudioSelect {selected_index: 0},
+                InputEvent::Enter => {
+                    let current_dsp_index = match self.app_state.dsp_type {
+                        DspType::SimpleSine => 0,
+                        DspType::BasicFm => 1,
+                        DspType::DrumEngine => 2,
+                    };
+
+                    Screen::AudioSelect { selected_index: current_dsp_index }
+                },
             }
             Screen::AudioSelect { mut selected_index} => match event {
                 InputEvent::Next => {
