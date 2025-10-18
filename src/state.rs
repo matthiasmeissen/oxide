@@ -62,3 +62,8 @@ impl Default for DspType {
         DspType::BasicFm
     }
 }
+
+pub enum Screen {
+    Home,
+    Settings,
+}

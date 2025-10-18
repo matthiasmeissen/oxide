@@ -18,7 +18,15 @@ const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bm
 const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/shader-frame-001.bmp");
 const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
 
-pub fn draw_screen<T>(display: &mut T, state: &State)
+pub fn draw<T>(display: &mut T, state: &State)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    draw_home(display, state);
+}
+
+fn draw_home<T>(display: &mut T, state: &State)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
