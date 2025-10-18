@@ -13,6 +13,9 @@ use tinybmp::Bmp;
 
 use std::fmt::Debug;
 
+// To convert the bmp file
+// Run: ffmpeg - i source.bmp - pix-fmt bgr24 target.bmp
+
 const RANGE12BASE: &'static [u8] = include_bytes!("../assets/bitmaps/range-12-base.bmp");
 const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bmp");
 const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/shader-frame-001.bmp");
