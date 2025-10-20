@@ -18,8 +18,9 @@ use std::fmt::Debug;
 
 const RANGE12BASE: &'static [u8] = include_bytes!("../assets/bitmaps/range-12-base.bmp");
 const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bmp");
-const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/shader-frame-001.bmp");
+const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/home-001-side.bmp");
 const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
+const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002.bmp");
 
 const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
 const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
@@ -68,10 +69,12 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let fps = format!("FPS: {:.2}", state.fps);
-    comp_text(display, Point { x: 20, y: 0 }, &fps);
-    let i = format!("Index: {}", index);
-    comp_text(display, Point { x: 20, y: 20 }, &i);
+    // let fps = format!("FPS: {:.2}", state.fps);
+    // comp_text(display, Point { x: 20, y: 0 }, &fps);
+    // let i = format!("Index: {}", index);
+    // comp_text(display, Point { x: 20, y: 20 }, &i);
+
+    comp_image(display, HOME002);
 }
 
 fn screen_shader<T>(display: &mut T, state: &State)
@@ -79,7 +82,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, "Shader");
+    comp_text(display, Point { x: 20, y: 0 }, "Shader: Press to select");
 }
 
 fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
@@ -95,7 +98,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, "Audio");
+    comp_text(display, Point { x: 20, y: 0 }, "Audio: Press to select");
 }
 
 fn screen_audio_select<T>(display: &mut T, state: &State, index: usize)
@@ -153,6 +156,15 @@ where
     let spritesheet_bmp = Bmp::from_slice(GRAPHIC001).unwrap();
     let image = spritesheet_bmp.sub_image(&area);
     Image::new(&image, position).draw(display).unwrap();
+}
+
+fn comp_image<T>(display: &mut T, bytes: &'static [u8])
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    let base = Bmp::from_slice(bytes).unwrap();
+    Image::new(&base, Point::new(0, 0)).draw(display).unwrap();
 }
 
 fn comp_trigger<T>(display: &mut T, position: Point, val: f32)
