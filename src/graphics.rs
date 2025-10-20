@@ -25,8 +25,9 @@ pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Outp
         window_title: String::from("Window Title"),
         high_dpi: true,
         // Resolution has to be set at three points (here, Stage impl, state.rs)
-        window_width: 960,
-        window_height: 540,
+        //window_width: 960,
+        //window_height: 540,
+        fullscreen: true,
         ..Default::default()
     };
 
@@ -130,7 +131,7 @@ impl Stage {
             start_time: Instant::now(),
             sender,
             reader,
-            mq_resolution: [960.0, 540.0],
+            mq_resolution: [width, height],
             is_fullscreen: false,
             shader_paths,
             current_shader_index,
