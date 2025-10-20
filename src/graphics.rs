@@ -25,8 +25,8 @@ pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Outp
         window_title: String::from("Window Title"),
         high_dpi: true,
         // Resolution has to be set at three points (here, Stage impl, state.rs)
-        //window_width: 960,
-        //window_height: 540,
+        window_width: 960,
+        window_height: 540,
         fullscreen: true,
         ..Default::default()
     };
@@ -132,7 +132,7 @@ impl Stage {
             sender,
             reader,
             mq_resolution: [width, height],
-            is_fullscreen: false,
+            is_fullscreen: true,
             shader_paths,
             current_shader_index,
             last_fps_update: Instant::now(),
@@ -256,7 +256,11 @@ impl EventHandler for Stage {
         }
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, _keymods: KeyMods, _repeat: bool) {
+    fn key_down_event(&mut self, keycode: KeyCode, _keymods: KeyMods, repeat: bool) {
+        if repeat {
+            return
+        }
+
         match keycode {
             KeyCode::Key1 => {self.sender.try_send(Message::SetValue(4, 1.0)).ok();},
             KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
