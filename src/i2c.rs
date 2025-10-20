@@ -63,12 +63,16 @@ pub fn start_i2c_thread(sender: Sender<Message>) {
                         handle_pot_change(prev_state.pot4_value, current_state.pot4_value, 3, &sender);
 
                         match (prev_state.encoder_button, current_state.encoder_button) {
-                            (false, true) => sender.send(Message::IncrementScreenIndex).unwrap(),
+                            (false, true) => sender.send(Message::UiInput(InputEvent::Enter)).unwrap(),
                             _ => (),
                         }
 
                         if current_state.encoder_value != prev_state.encoder_value {
-                            sender.send(Message::SetShaderIndex(current_state.encoder_value as usize)).unwrap();
+                            if current_state.encoder_value > prev_state.encoder_value {
+                                sender.send(Message::UiInput(InputEvent::Next)).unwrap();
+                            } else {
+                                sender.send(Message::UiInput(InputEvent::Prev)).unwrap();
+                            }
                         }
                     }
 

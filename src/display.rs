@@ -10,7 +10,7 @@ use triple_buffer::*;
 use std::thread;
 use std::time::Duration;
 
-pub fn start_display(mut display_reader: Output<State>) {
+pub fn start_display(mut display_reader: Output<DisplayState>) {
     thread::spawn(move || {
         let mut i2c = I2cdev::new("/dev/i2c-1").unwrap();
         i2c.set_slave_address(0x3C).unwrap();
