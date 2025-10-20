@@ -15,7 +15,7 @@ impl Default for State {
         Self { 
             time: 0.0, 
             resolution: [0.0, 0.0], 
-            values: [0.5; 8],
+            values: [0.0; 8],
             shader_index: 0,
             fps: 0.0,
             dsp_type: DspType::default(),
