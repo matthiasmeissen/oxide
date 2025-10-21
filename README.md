@@ -12,7 +12,7 @@ Early exploration and experiments are preserved in the `archive/exploration` bra
 The exported bmp files from Aesprite have the wrong pixel format.
 Use ffmpeg to convert them.
 
-`ffmpeg - i source.bmp - pix-fmt bgr24 target.bmp`
+`ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp`
 
 ### Autostart Program on Raspberry Pi
 

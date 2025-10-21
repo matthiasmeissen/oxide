@@ -14,13 +14,14 @@ use tinybmp::Bmp;
 use std::fmt::Debug;
 
 // To convert the bmp file
-// Run: ffmpeg - i source.bmp - pix-fmt bgr24 target.bmp
+// Run: ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp
 
 const RANGE12BASE: &'static [u8] = include_bytes!("../assets/bitmaps/range-12-base.bmp");
 const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bmp");
 const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/home-001-side.bmp");
 const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
 const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002.bmp");
+const HOME002RANGE: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range.bmp");
 
 const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
 const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
@@ -74,7 +75,8 @@ where
     // let i = format!("Index: {}", index);
     // comp_text(display, Point { x: 20, y: 20 }, &i);
 
-    comp_image(display, HOME002);
+    //comp_image(display, HOME002);
+    comp_spritesheet(display, Point::new(0, 0), 0.4, 32, 64, 28, HOME002RANGE);
 }
 
 fn screen_shader<T>(display: &mut T, state: &State)
@@ -154,6 +156,21 @@ where
 
     let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
     let spritesheet_bmp = Bmp::from_slice(GRAPHIC001).unwrap();
+    let image = spritesheet_bmp.sub_image(&area);
+    Image::new(&image, position).draw(display).unwrap();
+}
+
+fn comp_spritesheet<T>(display: &mut T, position: Point, val: f32, items: i32, width: i32, height: i32, bytes: &'static [u8])
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    let index = (val * items as f32).floor() as usize;
+
+    let x_offset = index as i32 * width;
+
+    let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
+    let spritesheet_bmp = Bmp::from_slice(bytes).unwrap();
     let image = spritesheet_bmp.sub_image(&area);
     Image::new(&image, position).draw(display).unwrap();
 }
