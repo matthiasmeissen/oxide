@@ -16,12 +16,12 @@ use std::fmt::Debug;
 // To convert the bmp file
 // Run: ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp
 
-const RANGE12BASE: &'static [u8] = include_bytes!("../assets/bitmaps/range-12-base.bmp");
 const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bmp");
-const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/home-001-side.bmp");
-const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
 const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002.bmp");
-const HOME002RANGE: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range.bmp");
+const HOME002RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-1.bmp");
+const HOME002RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-2.bmp");
+const HOME002RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-3.bmp");
+const HOME002RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-4.bmp");
 
 const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
 const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
@@ -53,16 +53,10 @@ where
     comp_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32);
     comp_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32);
 
-    comp_rounded(display);
-
-    comp_bar(display, Point::new(24, 13), state.values[0] as f32, "CV1");
-    comp_bar(display, Point::new(24 + 27, 13), state.values[1] as f32, "CV2");
-    comp_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3");
-    comp_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4");
-
-    comp_shader_frame(display, Point::new(0, 0), state.shader_index + 1);
-
-    comp_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
+    comp_value(display, Point::new(0, 8), state.values[0], 0);
+    comp_value(display, Point::new(64, 8), state.values[1], 1);
+    comp_value(display, Point::new(0, 36), state.values[2], 2);
+    comp_value(display, Point::new(64, 36), state.values[3], 3);
 }
 
 fn screen_home_settings<T>(display: &mut T, state: &State, index: usize)
@@ -75,8 +69,7 @@ where
     // let i = format!("Index: {}", index);
     // comp_text(display, Point { x: 20, y: 20 }, &i);
 
-    //comp_image(display, HOME002);
-    comp_spritesheet(display, Point::new(0, 0), 0.4, 32, 64, 28, HOME002RANGE);
+    comp_image(display, HOME002);
 }
 
 fn screen_shader<T>(display: &mut T, state: &State)
@@ -142,22 +135,34 @@ where
     }
 }
 
-fn comp_graphic_sprite<T>(display: &mut T, position: Point, val: f32)
+fn comp_value<T>(display: &mut T, position: Point, val: f32, index: usize)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let num_items = 4;
-    let index = (val * num_items as f32).floor() as usize;
-
-    let width: i32 = 18;
-    let height: i32 = 53;
-    let x_offset = index as i32 * width;
-
-    let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
-    let spritesheet_bmp = Bmp::from_slice(GRAPHIC001).unwrap();
-    let image = spritesheet_bmp.sub_image(&area);
-    Image::new(&image, position).draw(display).unwrap();
+    match index {
+        0 => {
+            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, HOME002RANGE1);
+            let text = format!("{:.1}", val);
+            comp_text(display, position + Point::new(1, 22), &text);
+        }
+        1 => {
+            comp_spritesheet(display, position, val, 32, 64, 28, HOME002RANGE2);
+            let text = format!("{:.1}", val);
+            comp_text(display, position + Point::new(51, 22), &text);
+        }
+        2 => {
+            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, HOME002RANGE3);
+            let text = format!("{:.1}", val);
+            comp_text(display, position + Point::new(1, 1), &text);
+        }
+        3 => {
+            comp_spritesheet(display, position, val, 32, 64, 28, HOME002RANGE4);
+            let text = format!("{:.1}", val);
+            comp_text(display, position + Point::new(51, 1), &text);
+        }
+        _ => ()
+    }
 }
 
 fn comp_spritesheet<T>(display: &mut T, position: Point, val: f32, items: i32, width: i32, height: i32, bytes: &'static [u8])
@@ -166,7 +171,6 @@ where
     T::Error: Debug,
 {
     let index = (val * items as f32).floor() as usize;
-
     let x_offset = index as i32 * width;
 
     let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
@@ -203,92 +207,6 @@ where
     let spritesheet_bmp = Bmp::from_slice(TRIGGER01).unwrap();
     let image = spritesheet_bmp.sub_image(&area);
     Image::new(&image, position).draw(display).unwrap();
-}
-
-fn comp_shader_frame<T>(display: &mut T, position: Point, index: usize)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    let character_style = MonoTextStyle::new(&FONT_5X7, BinaryColor::Off);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Center)
-        .build();
-
-
-    let image = Bmp::from_slice(SHADERFRAME).unwrap();
-    Image::new(&image, position).draw(display).unwrap();
-
-    let text = format!("S0{}", index);
-    Text::with_text_style(&text, position + Point::new(10, 2), character_style, text_style)
-        .draw(display).unwrap();
-}
-
-fn comp_rounded<T>(display: &mut T)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    Line::new(Point::new(24, 0), Point::new(126, 0))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-
-    Line::new(Point::new(127, 1), Point::new(127, 8))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-
-    Line::new(Point::new(126, 9), Point::new(24, 9))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-
-    Line::new(Point::new(23, 8), Point::new(23, 1))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-}
-
-
-fn comp_bar<T>(display: &mut T, position: Point, val: f32, label: &str)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    const BAR_TOP_LEFT: Point = Point::new(9, 9);
-    const BAR_BOTTOM_RIGHT: Point = Point::new(13, 41);
-    const LABEL_POS: Point = Point::new(11, 0);
-    const VALUE_POS: Point = Point::new(11, 46);
-
-    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Center)
-        .build();
-    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
-
-    // Label
-    Text::with_text_style(label, position + LABEL_POS, character_style, text_style)
-        .draw(display).unwrap();
-
-    // Base
-    let base = Bmp::from_slice(RANGE12BASE).unwrap();
-    Image::new(&base, Point::new(position.x, position.y + 7)).draw(display).unwrap();
-
-    // Bar
-    let bar_y_max = position.y + BAR_TOP_LEFT.y;
-    let bar_y_min = position.y + BAR_BOTTOM_RIGHT.y;
-
-    let top = lerp(bar_y_min as f32, bar_y_max as f32, val.clamp(0.0, 1.0)) as i32;
-    let bar_top_left = position + BAR_TOP_LEFT;
-    let bar_bottom_right = position + BAR_BOTTOM_RIGHT;
-
-    Rectangle::with_corners(Point::new(bar_top_left.x, top), bar_bottom_right)
-        .into_styled(fill)
-        .draw(display).unwrap();
-
-    // Value
-    let text = format!("{:.2}", val);
-    Text::with_text_style(&text, position + VALUE_POS, character_style, text_style)
-        .draw(display).unwrap();
 }
 
 fn lerp(min: f32, max: f32, val: f32) -> f32 {

@@ -14,6 +14,11 @@ Use ffmpeg to convert them.
 
 `ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp`
 
+To flip images you can do:
+`ffmpeg -i src.bmp -vf "hflip" flipped_horizontal.bmp`
+`ffmpeg -i src.bmp -vf "vflip" flipped_vertical.bmp`
+`ffmpeg -i src.bmp -vf "hflip,vflip" flipped_both.bmp`
+
 ### Autostart Program on Raspberry Pi
 
 Make program executable: `chmod +x dev/oxide/target/release/oxide`
