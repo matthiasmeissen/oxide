@@ -164,6 +164,11 @@ impl Coordinator {
 
                         if note == 41 { self.app_state.shader_index = 0 }
                         if note == 42 { self.app_state.shader_index = 1 }
+                        if note == 43 { self.app_state.shader_index = 2 }
+
+                        if note == 57 { self.app_state.dsp_type = DspType::SimpleSine }
+                        if note == 58 { self.app_state.dsp_type = DspType::DrumEngine }
+                        if note == 59 { self.app_state.dsp_type = DspType::BasicFm }
                     },
                     MidiDevice::OPZ => {
                         // From OP-Z
