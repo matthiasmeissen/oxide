@@ -16,12 +16,13 @@ use std::fmt::Debug;
 // To convert the bmp file
 // Run: ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp
 
-const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bmp");
-const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002.bmp");
-const HOME002RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-1.bmp");
-const HOME002RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-2.bmp");
-const HOME002RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-3.bmp");
-const HOME002RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002-range-4.bmp");
+const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002.bmp");
+const TOP: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-top.bmp");
+const TRIGGER: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-trigger.bmp");
+const RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-1.bmp");
+const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-2.bmp");
+const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-3.bmp");
+const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-4.bmp");
 
 const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
 const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
@@ -48,15 +49,23 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_trigger(display, Point::new(24, 1), state.values[4] as f32);
-    comp_trigger(display, Point::new(24 + 27, 1), state.values[5] as f32);
-    comp_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32);
-    comp_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32);
+    comp_image(display, TOP);
+    let fps = format!("{:.0}", state.fps);
+    comp_dark_text(display, Point::new(38, 1), &fps);
+    let shader = format!("{}", state.shader_index);
+    comp_dark_text(display, Point::new(55, 1), &shader);
+    let dsp = format!("{}", state.dsp_type);
+    comp_dark_text(display, Point::new(68, 1), &dsp);
 
     comp_value(display, Point::new(0, 8), state.values[0], 0);
     comp_value(display, Point::new(64, 8), state.values[1], 1);
     comp_value(display, Point::new(0, 36), state.values[2], 2);
     comp_value(display, Point::new(64, 36), state.values[3], 3);
+    
+    comp_trigger(display, Point::new(50, 9), state.values[4], 0.0);
+    comp_trigger(display, Point::new(67, 9), state.values[5], 2.0);
+    comp_trigger(display, Point::new(50, 59), state.values[6], 4.0);
+    comp_trigger(display, Point::new(67, 59), state.values[7], 6.0);
 }
 
 fn screen_home_settings<T>(display: &mut T, state: &State, index: usize)
@@ -121,6 +130,21 @@ where
         .draw(display).unwrap();
 }
 
+fn comp_dark_text<T>(display: &mut T, position: Point, text: &str)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::Off);
+    let text_style = TextStyleBuilder::new()
+        .baseline(embedded_graphics::text::Baseline::Top)
+        .alignment(embedded_graphics::text::Alignment::Left)
+        .build();
+
+    Text::with_text_style(&text, position, character_style, text_style)
+        .draw(display).unwrap();
+}
+
 fn comp_select_list<T>(display: &mut T, index: usize, list: &[&str])
 where
     T: DrawTarget<Color = BinaryColor>,
@@ -140,25 +164,22 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
+    let text = format!("{:.1}", val);
     match index {
         0 => {
-            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, HOME002RANGE1);
-            let text = format!("{:.1}", val);
+            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, RANGE1);
             comp_text(display, position + Point::new(1, 22), &text);
         }
         1 => {
-            comp_spritesheet(display, position, val, 32, 64, 28, HOME002RANGE2);
-            let text = format!("{:.1}", val);
+            comp_spritesheet(display, position, val, 32, 64, 28, RANGE2);
             comp_text(display, position + Point::new(51, 22), &text);
         }
         2 => {
-            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, HOME002RANGE3);
-            let text = format!("{:.1}", val);
+            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, RANGE3);
             comp_text(display, position + Point::new(1, 1), &text);
         }
         3 => {
-            comp_spritesheet(display, position, val, 32, 64, 28, HOME002RANGE4);
-            let text = format!("{:.1}", val);
+            comp_spritesheet(display, position, val, 32, 64, 28, RANGE4);
             comp_text(display, position + Point::new(51, 1), &text);
         }
         _ => ()
@@ -188,25 +209,18 @@ where
     Image::new(&base, Point::new(0, 0)).draw(display).unwrap();
 }
 
-fn comp_trigger<T>(display: &mut T, position: Point, val: f32)
+fn comp_trigger<T>(display: &mut T, position: Point, val: f32, index: f32)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let index = if val > 0.5 {
-        1
+    let val = if val > 0.5 {
+        (index + 1.0) / 4.0
     } else {
-        0
+        (index + 0.0) / 4.0
     };
 
-    let width: i32 = 23;
-    let height: i32 = 8;
-    let x_offset = index as i32 * width;
-
-    let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
-    let spritesheet_bmp = Bmp::from_slice(TRIGGER01).unwrap();
-    let image = spritesheet_bmp.sub_image(&area);
-    Image::new(&image, position).draw(display).unwrap();
+    comp_spritesheet(display, position, val, 4, 11, 3, TRIGGER);
 }
 
 fn lerp(min: f32, max: f32, val: f32) -> f32 {

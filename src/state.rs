@@ -1,4 +1,4 @@
-use std::default;
+use std::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct State {
@@ -97,5 +97,15 @@ pub enum DspType {
 impl Default for DspType {
     fn default() -> Self {
         DspType::BasicFm
+    }
+}
+
+impl fmt::Display for DspType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DspType::SimpleSine => write!(f, "Simple Sine"),
+            DspType::BasicFm => write!(f, "Basic FM"),
+            DspType::DrumEngine => write!(f, "Drum Engine"),
+        }
     }
 }
