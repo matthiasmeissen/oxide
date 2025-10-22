@@ -24,6 +24,7 @@ const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-00
 const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-3.bmp");
 const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-4.bmp");
 
+const SHADERSELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-select.bmp");
 const SHADER01: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-01.bmp");
 const SHADER02: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-02.bmp");
 const SHADER03: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-03.bmp");
@@ -53,7 +54,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_image(display, TOP);
+    comp_image(display,Point::new(0, 0), TOP);
     let fps = format!("{:.0}", state.fps);
     comp_dark_text(display, Point::new(38, 1), &fps);
     let shader = format!("{}", state.shader_index);
@@ -82,7 +83,7 @@ where
     // let i = format!("Index: {}", index);
     // comp_text(display, Point { x: 20, y: 20 }, &i);
 
-    comp_image(display, HOME002);
+    comp_image(display, Point::new(0, 0), HOME002);
 }
 
 fn screen_shader<T>(display: &mut T, state: &State)
@@ -90,15 +91,10 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let index = state.shader_index;
-    match index {
-        0 => comp_image(display, SHADER01),
-        1 => comp_image(display, SHADER02),
-        2 => comp_image(display, SHADER03),
-        _ => comp_image(display, SHADER01),
-    }
-    let num = format!("{}", index);
+    comp_select_shader_image(display, state.shader_index);
+    let num = format!("{}", state.shader_index);
     comp_dark_text(display, Point { x: 117, y: 4 }, &num);
+    comp_image(display, Point::new(34, 51), SHADERSELECT);
 }
 
 fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
@@ -106,7 +102,9 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_select_list(display, index, SHADER_NAMES);
+    comp_select_shader_image(display, index);
+    let num = format!("{}", index);
+    comp_dark_text(display, Point { x: 117, y: 4 }, &num);
 }
 
 fn screen_audio<T>(display: &mut T, state: &State)
@@ -171,6 +169,19 @@ where
     }
 }
 
+fn comp_select_shader_image<T>(display: &mut T, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    match index {
+        0 => comp_image(display, Point::new(0, 0), SHADER01),
+        1 => comp_image(display, Point::new(0, 0), SHADER02),
+        2 => comp_image(display, Point::new(0, 0), SHADER03),
+        _ => comp_image(display, Point::new(0, 0), SHADER01),
+    }
+}
+
 fn comp_value<T>(display: &mut T, position: Point, val: f32, index: usize)
 where
     T: DrawTarget<Color = BinaryColor>,
@@ -212,13 +223,13 @@ where
     Image::new(&image, position).draw(display).unwrap();
 }
 
-fn comp_image<T>(display: &mut T, bytes: &'static [u8])
+fn comp_image<T>(display: &mut T, position: Point, bytes: &'static [u8])
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
     let base = Bmp::from_slice(bytes).unwrap();
-    Image::new(&base, Point::new(0, 0)).draw(display).unwrap();
+    Image::new(&base, position).draw(display).unwrap();
 }
 
 fn comp_trigger<T>(display: &mut T, position: Point, val: f32, index: f32)
