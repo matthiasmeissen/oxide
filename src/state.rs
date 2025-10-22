@@ -94,6 +94,16 @@ pub enum DspType {
     DrumEngine,
 }
 
+impl DspType {
+    pub fn get_index(&self) -> usize {
+        match self {
+            DspType::SimpleSine => 0,
+            DspType::BasicFm => 1,
+            DspType::DrumEngine => 2,
+        }
+    }
+}
+
 impl Default for DspType {
     fn default() -> Self {
         DspType::BasicFm

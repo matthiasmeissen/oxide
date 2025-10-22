@@ -112,7 +112,8 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, "Audio: Press to select");
+    comp_select_list(display, state.dsp_type.get_index(), DSP_NAMES);
+    comp_image(display, Point::new(34, 51), SHADERSELECT);
 }
 
 fn screen_audio_select<T>(display: &mut T, state: &State, index: usize)
@@ -161,11 +162,11 @@ where
     T::Error: Debug,
 {
     for (i, item) in list.iter().enumerate() {
-        let offset_y = i as i32 * 8;
+        let offset_y = (i as i32 * 8) + 2;
         if i == index {
-            comp_text(display, Point { x: 0, y: offset_y }, ">");
+            comp_text(display, Point { x: 2, y: offset_y }, ">");
         }
-        comp_text(display, Point { x: 20, y: offset_y }, item);
+        comp_text(display, Point { x: 12, y: offset_y }, item);
     }
 }
 
