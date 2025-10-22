@@ -24,6 +24,10 @@ const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-00
 const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-3.bmp");
 const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-4.bmp");
 
+const SHADER01: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-01.bmp");
+const SHADER02: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-02.bmp");
+const SHADER03: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-03.bmp");
+
 const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
 const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
 
@@ -86,7 +90,15 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_text(display, Point { x: 20, y: 0 }, "Shader: Press to select");
+    let index = state.shader_index;
+    match index {
+        0 => comp_image(display, SHADER01),
+        1 => comp_image(display, SHADER02),
+        2 => comp_image(display, SHADER03),
+        _ => comp_image(display, SHADER01),
+    }
+    let num = format!("{}", index);
+    comp_dark_text(display, Point { x: 117, y: 4 }, &num);
 }
 
 fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)

@@ -133,6 +133,9 @@ impl Coordinator {
                         if controller == 78 { self.app_state.values[1] = normalize_midi(value); }
                         if controller == 79 { self.app_state.values[2] = normalize_midi(value); }
                         if controller == 80 { self.app_state.values[3] = normalize_midi(value); }
+
+                        if controller == 106 { if value == 127 {self.handle_ui_input(InputEvent::Prev);} else {} }
+                        if controller == 107 { if value == 127 {self.handle_ui_input(InputEvent::Next);} else {} }
                     },
                     MidiDevice::OPZ => {
                         // From OP-Z
@@ -159,6 +162,8 @@ impl Coordinator {
                         if note == 74 { self.app_state.values[5] = 1.0 }
                         if note == 75 { self.app_state.values[6] = 1.0 }
                         if note == 76 { self.app_state.values[7] = 1.0 }
+                        
+                        if note == 105 { self.handle_ui_input(InputEvent::Enter); }
 
                         if note == 41 { self.app_state.shader_index = 0 }
                         if note == 42 { self.app_state.shader_index = 1 }
