@@ -84,7 +84,7 @@ impl Coordinator {
                 },
                 InputEvent::Enter => {
                     self.app_state.shader_index = selected_index;
-                    Screen::Shader
+                    Screen::Home
                 },
             }
             Screen::Audio => match event {
@@ -96,7 +96,6 @@ impl Coordinator {
                         DspType::BasicFm => 1,
                         DspType::DrumEngine => 2,
                     };
-
                     Screen::AudioSelect { selected_index: current_dsp_index }
                 },
             }
@@ -116,8 +115,7 @@ impl Coordinator {
                         2 => DspType::DrumEngine,
                         _ => self.app_state.dsp_type,
                     };
-
-                    Screen::Audio
+                    Screen::Home
                 },
             }
         };
