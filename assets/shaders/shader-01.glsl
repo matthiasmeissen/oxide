@@ -5,6 +5,8 @@ varying vec2 v_uv;
 
 uniform float u_time;
 uniform vec2 u_resolution;
+uniform sampler2D u_texture;
+
 uniform float u_cv1;
 uniform float u_cv2;
 uniform float u_cv3;
@@ -15,6 +17,22 @@ uniform float u_gate3;
 uniform float u_gate4;
 
 #define rot(a) mat2(cos(a), -sin(a), sin(a), cos(a))
+
+vec3 applyCornerOverlay(vec3 baseColor, vec2 uv, vec2 cornerPos, float overlaySize, float blendAmount) {
+    vec2 overlayMin = cornerPos * (1.0 - overlaySize);
+    vec2 overlayMax = overlayMin + overlaySize;
+    
+    if (uv.x < overlayMin.x || uv.x > overlayMax.x || 
+        uv.y < overlayMin.y || uv.y > overlayMax.y) {
+        return baseColor;
+    }
+    
+    vec2 overlayUV = (uv - overlayMin) / overlaySize;
+    overlayUV.y = 1.0 - overlayUV.y;
+    vec3 texColor = texture2D(u_texture, overlayUV).rgb;
+    
+    return mix(baseColor, texColor, blendAmount);
+}
 
 void main() {
     vec2 uv = v_uv;
@@ -40,6 +58,8 @@ void main() {
     d = mix(d, 1.0 - d, u_gate1);
 
     vec3 col = vec3(d);
+
+    col = applyCornerOverlay(col, v_uv, vec2(1.0, 0.0), 0.25, 1.0);
 
     gl_FragColor = vec4(col, 1.0);
 }

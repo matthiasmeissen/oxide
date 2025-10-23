@@ -47,22 +47,23 @@ fn main() {
     start_coordinator_thread(receiver, window_writer, display_writer, audio_writer);
     start_midi_thread(sender.clone());
     start_audio_thread(audio_reader);
+    start_graphics_thread(sender.clone(), window_reader, display_reader);
 
-    #[cfg(feature = "simulator")]
-    {
-        println!("Running with display simulator");
-        start_display_simulator(sender.clone(), display_reader);
-    }
+    // #[cfg(feature = "simulator")]
+    // {
+    //     println!("Running with display simulator");
+    //     start_display_simulator(sender.clone(), display_reader);
+    // }
 
-    #[cfg(not(feature = "simulator"))]
-    {
-        #[cfg(target_os = "linux")]
-        {
-            println!("Running on target hardware");
-            start_display(display_reader);
-            start_i2c_thread(sender.clone());
-        }
+    // #[cfg(not(feature = "simulator"))]
+    // {
+    //     #[cfg(target_os = "linux")]
+    //     {
+    //         println!("Running on target hardware");
+    //         start_display(display_reader);
+    //         start_i2c_thread(sender.clone());
+    //     }
     
-        start_graphics_thread(sender.clone(), window_reader);
-    }
+    //     start_graphics_thread(sender.clone(), window_reader);
+    // }
 }

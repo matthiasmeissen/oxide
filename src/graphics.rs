@@ -1,9 +1,14 @@
 use crate::state::*;
+use crate::screens::draw;
 
 use miniquad::*;
 use std::{fs, time::Instant};
 use crossbeam_channel::Sender;
 use triple_buffer::Output;
+use embedded_graphics::{
+    pixelcolor::BinaryColor,
+    prelude::*,
+};
 
 const VERTEX: &str = r#"
     #version 100
@@ -20,18 +25,109 @@ const VERTEX: &str = r#"
     }
 "#;
 
-pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Output<State>) {
+pub fn start_graphics_thread(
+    window_sender: Sender<Message>, 
+    window_reader: Output<State>,
+    display_reader: Output<DisplayState>
+) {
     let conf = conf::Conf {
         window_title: String::from("Window Title"),
         high_dpi: true,
-        // Resolution has to be set at three points (here, Stage impl, state.rs)
         window_width: 960,
         window_height: 540,
         fullscreen: true,
         ..Default::default()
     };
 
-    start(conf, || Box::new(Stage::new(window_sender, window_reader)));
+    start(conf, || Box::new(Stage::new(window_sender, window_reader, display_reader)));
+}
+
+struct DisplayBuffer {
+    buffer: [u8; 128 * 64 / 8],
+    rgba_cache: Vec<u8>,
+    width: usize,
+    height: usize,
+}
+
+impl DisplayBuffer {
+    fn new() -> Self {
+        Self {
+            buffer: [0u8; 128 * 64 / 8],
+            rgba_cache: vec![0u8; 128 * 64 * 4],
+            width: 128,
+            height: 64,
+        }
+    }
+
+    fn clear(&mut self) {
+        self.buffer.fill(0);
+    }
+
+    fn to_rgba(&mut self) -> &[u8] {
+        const ON_R: u8 = 255;
+        const ON_G: u8 = 0;
+        const ON_B: u8 = 0;
+        const OFF_R: u8 = 10;
+        const OFF_G: u8 = 10;
+        const OFF_B: u8 = 10;
+        
+        for y in 0..self.height {
+            let row_base = y * self.width;
+            for x in 0..self.width {
+                let byte_idx = (y / 8) * self.width + x;
+                let bit_idx = y % 8;
+                let pixel_on = (self.buffer[byte_idx] >> bit_idx) & 1 == 1;
+                
+                let rgba_idx = (row_base + x) * 4;
+                
+                let (r, g, b) = if pixel_on { 
+                    (ON_R, ON_G, ON_B) 
+                } else { 
+                    (OFF_R, OFF_G, OFF_B) 
+                };
+                
+                self.rgba_cache[rgba_idx] = r;
+                self.rgba_cache[rgba_idx + 1] = g;
+                self.rgba_cache[rgba_idx + 2] = b;
+                self.rgba_cache[rgba_idx + 3] = 255;
+            }
+        }
+        
+        &self.rgba_cache
+    }
+}
+
+impl DrawTarget for DisplayBuffer {
+    type Color = BinaryColor;
+    type Error = core::convert::Infallible;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        for Pixel(coord, color) in pixels.into_iter() {
+            let x = coord.x as usize;
+            let y = coord.y as usize;
+            
+            if x < self.width && y < self.height {
+                let byte_idx = (y / 8) * self.width + x;
+                let bit_idx = y % 8;
+                
+                if color.is_on() {
+                    self.buffer[byte_idx] |= 1 << bit_idx;
+                } else {
+                    self.buffer[byte_idx] &= !(1 << bit_idx);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl OriginDimensions for DisplayBuffer {
+    fn size(&self) -> Size {
+        Size::new(self.width as u32, self.height as u32)
+    }
 }
 
 struct Stage {
@@ -41,16 +137,20 @@ struct Stage {
     start_time: std::time::Instant,
     sender: Sender<Message>,
     reader: Output<State>,
+    display_reader: Output<DisplayState>,
+    display_buffer: DisplayBuffer,
+    display_texture: TextureId,
     mq_resolution: [f32; 2],
     is_fullscreen: bool,
     shader_paths: Vec<String>,
     current_shader_index: usize,
     last_fps_update: Instant,
     frames_since_update: u32,
+    display_update_counter: u32,
 }
 
 impl Stage {
-    fn new(sender: Sender<Message>, reader: Output<State>) -> Self {
+    fn new(sender: Sender<Message>, reader: Output<State>, mut display_reader: Output<DisplayState>) -> Self {
         let mut ctx = window::new_rendering_backend();
 
         // Define vertices with position and uv
@@ -78,6 +178,19 @@ impl Stage {
             BufferSource::slice(&indices)
         );
 
+        // Create display buffer and texture
+        let mut display_buffer = DisplayBuffer::new();
+        
+        // Render initial display state
+        let display_state = display_reader.read();
+        display_buffer.clear();
+        draw(&mut display_buffer, &display_state);
+        
+        // Create texture from display buffer
+        let initial_rgba = display_buffer.to_rgba();
+        let display_texture = ctx.new_texture_from_rgba8(128, 64, initial_rgba);
+        ctx.texture_set_filter(display_texture, FilterMode::Nearest, MipmapFilterMode::None);
+
         // Load shaders from directory
         let shader_paths = load_shaders_from_dir(std::path::Path::new("assets/shaders"))
             .expect("Failed to load shaders from 'assets/shaders' directory.");
@@ -102,11 +215,11 @@ impl Stage {
             shader_meta()
         ).expect("Something is not working");
 
-        // Create bindings
+        // Create bindings with display texture
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
             index_buffer: index_buffer,
-            images: vec![]
+            images: vec![display_texture]
         };
 
         // Create pipeline
@@ -131,13 +244,31 @@ impl Stage {
             start_time: Instant::now(),
             sender,
             reader,
+            display_reader,
+            display_buffer,
+            display_texture,
             mq_resolution: [width, height],
             is_fullscreen: true,
             shader_paths,
             current_shader_index,
             last_fps_update: Instant::now(),
             frames_since_update: 0,
+            display_update_counter: 0,
         }
+    }
+
+    #[inline]
+    fn update_display_texture(&mut self) {
+        // Get the current display state
+        let display_state = self.display_reader.read();
+        
+        // Clear and draw to buffer
+        self.display_buffer.clear();
+        draw(&mut self.display_buffer, &display_state);
+        
+        // Convert to RGBA and update texture (now returns &[u8] instead of Vec<u8>)
+        let rgba_data = self.display_buffer.to_rgba();
+        self.ctx.texture_update(self.display_texture, rgba_data);
     }
 
     fn set_shader(&mut self, new_index: usize) {
@@ -200,8 +331,17 @@ impl EventHandler for Stage {
         if new_shader_index != self.current_shader_index {
             self.set_shader(new_shader_index);
         }
+
+        // OPTIMIZED: Update display texture every 2 frames (30fps for 60fps main)
+        // Adjust divisor based on your needs: 1=60fps, 2=30fps, 3=20fps, 4=15fps
+        self.display_update_counter += 1;
+        if self.display_update_counter >= 2 {
+            self.update_display_texture();
+            self.display_update_counter = 0;
+        }
     }
 
+    #[inline]
     fn draw(&mut self) {
         self.ctx.begin_default_pass(PassAction::Nothing);
         self.ctx.apply_pipeline(&self.pipeline);
@@ -238,6 +378,7 @@ impl EventHandler for Stage {
         println!("Set resolution to: {width}, {height}");
     }
 
+    #[inline]
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
         let dpi_factor = miniquad::window::dpi_scale();
         let norm_x = x / dpi_factor / self.mq_resolution[0];
@@ -301,13 +442,8 @@ struct Vertex {
     uv: [f32; 2],
 }
 
-// You have to define your uniforms in three places
-// In the struct Uniforms
-// In the ShaderMeta
-// In the draw function of the EventHandler implementation for Stage
 #[repr(C)]
 struct Uniforms {
-    // Important: uniforms are f32 type
     u_time: f32,
     u_resolution: [f32; 2],
     u_cv1: f32,
@@ -336,7 +472,7 @@ fn shader_meta() -> ShaderMeta {
                 UniformDesc::new("u_gate4", UniformType::Float1),
             ] 
         }, 
-        images: vec![] 
+        images: vec!["u_texture".to_string()]
     }
 }
 
