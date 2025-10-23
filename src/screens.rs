@@ -2,11 +2,11 @@ use crate::state::*;
 
 use embedded_graphics::{
     image::{Image, ImageDrawableExt},
-    mono_font::{ascii::{FONT_4X6, FONT_5X7}, MonoTextStyle},
+    mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::BinaryColor,
-    prelude::{DrawTarget, Point, Primitive, Size},
-    primitives::{PrimitiveStyle, Rectangle, Line},
-    text::{Text, TextStyleBuilder},
+    prelude::{DrawTarget, Point, Size},
+    primitives::Rectangle,
+    text::{Text, TextStyle, TextStyleBuilder},
     Drawable,
 };
 use tinybmp::Bmp;
@@ -27,6 +27,11 @@ const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-00
 const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-select.bmp");
 const SHADER: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001.bmp");
 const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-001/audio-001.bmp");
+
+
+const CHARACTERSTYLE: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
+const CHARACTERSTYLEDARK: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::Off);
+const TEXTSTYLE: TextStyle = TextStyleBuilder::new().baseline(embedded_graphics::text::Baseline::Top).alignment(embedded_graphics::text::Alignment::Left).build();
 
 pub fn draw<T>(display: &mut T, state: &DisplayState)
 where
@@ -52,11 +57,13 @@ where
 {
     comp_image(display,Point::new(0, 0), TOP);
     let fps = format!("{:.0}", state.fps);
-    comp_dark_text(display, Point::new(38, 1), &fps);
+    Text::with_text_style(&fps, Point::new(38, 1), CHARACTERSTYLEDARK, TEXTSTYLE).draw(display).unwrap();
+
     let shader = format!("{}", state.shader_index);
-    comp_dark_text(display, Point::new(55, 1), &shader);
+    Text::with_text_style(&shader, Point::new(55, 1), CHARACTERSTYLEDARK, TEXTSTYLE).draw(display).unwrap();
+
     let dsp = format!("{}", state.dsp_type);
-    comp_dark_text(display, Point::new(68, 1), &dsp);
+    Text::with_text_style(&dsp, Point::new(68, 1), CHARACTERSTYLEDARK, TEXTSTYLE).draw(display).unwrap();
 
     comp_value(display, Point::new(0, 8), state.values[0], 0);
     comp_value(display, Point::new(64, 8), state.values[1], 1);
@@ -118,36 +125,6 @@ where
 
 // -------- Components --------
 
-fn comp_text<T>(display: &mut T, position: Point, text: &str)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Left)
-        .build();
-
-    Text::with_text_style(&text, position, character_style, text_style)
-        .draw(display).unwrap();
-}
-
-fn comp_dark_text<T>(display: &mut T, position: Point, text: &str)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::Off);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Left)
-        .build();
-
-    Text::with_text_style(&text, position, character_style, text_style)
-        .draw(display).unwrap();
-}
-
 fn comp_value<T>(display: &mut T, position: Point, val: f32, index: usize)
 where
     T: DrawTarget<Color = BinaryColor>,
@@ -157,19 +134,19 @@ where
     match index {
         0 => {
             comp_spritesheet(display, position, SpritesheetIndex::Normalized(1.0 - val), 32, 64, 28, RANGE1);
-            comp_text(display, position + Point::new(1, 22), &text);
+            Text::with_text_style(&text, position + Point::new(1, 22), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
         }
         1 => {
             comp_spritesheet(display, position, SpritesheetIndex::Normalized(val), 32, 64, 28, RANGE2);
-            comp_text(display, position + Point::new(51, 22), &text);
+            Text::with_text_style(&text, position + Point::new(51, 22), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
         }
         2 => {
             comp_spritesheet(display, position, SpritesheetIndex::Normalized(1.0 - val), 32, 64, 28, RANGE3);
-            comp_text(display, position + Point::new(1, 1), &text);
+            Text::with_text_style(&text, position + Point::new(1, 1), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
         }
         3 => {
             comp_spritesheet(display, position, SpritesheetIndex::Normalized(val), 32, 64, 28, RANGE4);
-            comp_text(display, position + Point::new(51, 1), &text);
+            Text::with_text_style(&text, position + Point::new(51, 1), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
         }
         _ => ()
     }
