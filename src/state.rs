@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct State {
     pub time: f64,
@@ -5,7 +7,6 @@ pub struct State {
     pub values: [f32; 8],
     pub shader_index: usize,
     pub fps: f32,
-    pub screen_index: usize,
     pub dsp_type: DspType,
 }
 
@@ -14,11 +15,41 @@ impl Default for State {
         Self { 
             time: 0.0, 
             resolution: [0.0, 0.0], 
-            values: [0.5; 8],
+            values: [0.0; 8],
             shader_index: 0,
             fps: 0.0,
-            screen_index: 0,
             dsp_type: DspType::default(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Screen {
+    Home,
+    HomeSettings { selected_index: usize },
+    Shader,
+    ShaderSelect { selected_index: usize },
+    Audio,
+    AudioSelect { selected_index: usize },
+}
+
+impl Default for Screen {
+    fn default() -> Self {
+        Screen::Home
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DisplayState {
+    pub app: State,
+    pub ui: Screen,
+}
+
+impl Default for DisplayState {
+    fn default() -> Self {
+        Self {
+            app: State::default(),
+            ui: Screen::default(),
         }
     }
 }
@@ -30,9 +61,15 @@ pub enum Message {
     MidiInput(MidiDevice, MidiMessage),
     SetShaderIndex(usize),
     SetFps(f32),
-    SetScreenIndex(usize),
-    IncrementScreenIndex,
     SetDspType(DspType),
+    UiInput(InputEvent),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum InputEvent {
+    Next,
+    Prev,
+    Enter,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -57,8 +94,28 @@ pub enum DspType {
     DrumEngine,
 }
 
+impl DspType {
+    pub fn get_index(&self) -> usize {
+        match self {
+            DspType::SimpleSine => 0,
+            DspType::BasicFm => 1,
+            DspType::DrumEngine => 2,
+        }
+    }
+}
+
 impl Default for DspType {
     fn default() -> Self {
         DspType::BasicFm
+    }
+}
+
+impl fmt::Display for DspType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DspType::SimpleSine => write!(f, "Simple Sine"),
+            DspType::BasicFm => write!(f, "Basic FM"),
+            DspType::DrumEngine => write!(f, "Drum Engine"),
+        }
     }
 }

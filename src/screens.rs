@@ -2,185 +2,201 @@ use crate::state::*;
 
 use embedded_graphics::{
     image::{Image, ImageDrawableExt},
-    mono_font::{ascii::{FONT_4X6, FONT_5X7}, MonoTextStyle},
+    mono_font::{ascii::FONT_4X6, MonoTextStyle},
     pixelcolor::BinaryColor,
-    prelude::{DrawTarget, Point, Primitive, Size},
-    primitives::{PrimitiveStyle, Rectangle, Line},
-    text::{Text, TextStyleBuilder},
+    prelude::{DrawTarget, Point, Size},
+    primitives::Rectangle,
+    text::{Text, TextStyle, TextStyleBuilder},
     Drawable,
 };
 use tinybmp::Bmp;
 
 use std::fmt::Debug;
 
-const RANGE12BASE: &'static [u8] = include_bytes!("../assets/bitmaps/range-12-base.bmp");
-const TRIGGER01: &'static [u8] = include_bytes!("../assets/bitmaps/trigger-01.bmp");
-const SHADERFRAME: &'static [u8] = include_bytes!("../assets/bitmaps/shader-frame-001.bmp");
-const GRAPHIC001: &'static [u8] = include_bytes!("../assets/bitmaps/graphic-001.bmp");
+// To convert the bmp file
+// Run: ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp
 
-pub fn draw_screen<T>(display: &mut T, state: &State)
+const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002.bmp");
+const TOP: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-top.bmp");
+const TRIGGER: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-trigger.bmp");
+const RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-1.bmp");
+const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-2.bmp");
+const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-3.bmp");
+const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-4.bmp");
+
+const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-select.bmp");
+const SHADER: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001.bmp");
+const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-001/audio-001.bmp");
+
+
+const CHARACTERSTYLE: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
+const CHARACTERSTYLEDARK: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::Off);
+const TEXTSTYLE: TextStyle = TextStyleBuilder::new().baseline(embedded_graphics::text::Baseline::Top).alignment(embedded_graphics::text::Alignment::Left).build();
+
+pub fn draw<T>(display: &mut T, state: &DisplayState)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    draw_trigger(display, Point::new(24, 1), state.values[4] as f32);
-    draw_trigger(display, Point::new(24 + 27, 1), state.values[5] as f32);
-    draw_trigger(display, Point::new(24 + 27 * 2, 1), state.values[6] as f32);
-    draw_trigger(display, Point::new(24 + 27 * 3, 1), state.values[7] as f32);
-
-    draw_rounded(display);
-
-    draw_bar(display, Point::new(24, 13), state.values[0] as f32, "CV1");
-    draw_bar(display, Point::new(24 + 27, 13), state.values[1] as f32, "CV2");
-    draw_bar(display, Point::new(24 + 27 * 2, 13), state.values[2] as f32, "CV3");
-    draw_bar(display, Point::new(24 + 27 * 3, 13), state.values[3] as f32, "CV4");
-
-    draw_shader_frame(display, Point::new(0, 0), state.shader_index + 1);
-
-    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
+    match state.ui {
+        Screen::Home => screen_home(display, &state.app),
+        Screen::HomeSettings {selected_index} => screen_home_settings(display, &state.app, selected_index),
+        Screen::Shader => screen_shader(display, &state.app),
+        Screen::ShaderSelect {selected_index} => screen_shader_select(display, &state.app, selected_index),
+        Screen::Audio => screen_audio(display, &state.app),
+        Screen::AudioSelect {selected_index} => screen_audio_select(display, &state.app, selected_index),
+    }
 }
 
-pub fn draw_debug<T>(display: &mut T, state: &State)
+// -------- Screens --------
+
+fn screen_home<T>(display: &mut T, state: &State)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Left)
-        .build();
+    comp_image(display,Point::new(0, 0), TOP);
+    let fps = format!("{:.0}", state.fps);
+    Text::with_text_style(&fps, Point::new(38, 1), CHARACTERSTYLEDARK, TEXTSTYLE).draw(display).unwrap();
 
-    let fps = format!("FPS: {:.2}", state.fps);
-    Text::with_text_style(&fps, Point::new(32, 2), character_style, text_style)
-        .draw(display).unwrap();
+    let shader = format!("{}", state.shader_index);
+    Text::with_text_style(&shader, Point::new(55, 1), CHARACTERSTYLEDARK, TEXTSTYLE).draw(display).unwrap();
 
-    draw_graphic_sprite(display, Point::new(1, 10), state.values[0] as f32);
+    let dsp = format!("{}", state.dsp_type);
+    Text::with_text_style(&dsp, Point::new(68, 1), CHARACTERSTYLEDARK, TEXTSTYLE).draw(display).unwrap();
+
+    comp_value(display, Point::new(0, 8), state.values[0], 0);
+    comp_value(display, Point::new(64, 8), state.values[1], 1);
+    comp_value(display, Point::new(0, 36), state.values[2], 2);
+    comp_value(display, Point::new(64, 36), state.values[3], 3);
+    
+    comp_trigger(display, Point::new(50, 9), state.values[4]);
+    comp_trigger(display, Point::new(67, 9), state.values[5]);
+    comp_trigger(display, Point::new(50, 59), state.values[6]);
+    comp_trigger(display, Point::new(67, 59), state.values[7]);
 }
 
-fn draw_graphic_sprite<T>(display: &mut T, position: Point, val: f32)
+fn screen_home_settings<T>(display: &mut T, state: &State, index: usize)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let num_items = 4;
-    let index = (val * num_items as f32).floor() as usize;
+    // let fps = format!("FPS: {:.2}", state.fps);
+    // comp_text(display, Point { x: 20, y: 0 }, &fps);
+    // let i = format!("Index: {}", index);
+    // comp_text(display, Point { x: 20, y: 20 }, &i);
 
-    let width: i32 = 18;
-    let height: i32 = 53;
-    let x_offset = index as i32 * width;
-
-    let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
-    let spritesheet_bmp = Bmp::from_slice(GRAPHIC001).unwrap();
-    let image = spritesheet_bmp.sub_image(&area);
-    Image::new(&image, position).draw(display).unwrap();
+    comp_image(display, Point::new(0, 0), HOME002);
 }
 
-fn draw_trigger<T>(display: &mut T, position: Point, val: f32)
+fn screen_shader<T>(display: &mut T, state: &State)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let index = if val > 0.5 {
-        1
-    } else {
-        0
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.shader_index), 3, 128, 64, SHADER);
+    comp_image(display, Point::new(34, 51), SELECT);
+}
+
+fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(index), 3, 128, 64, SHADER);
+}
+
+fn screen_audio<T>(display: &mut T, state: &State)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.dsp_type.get_index()), 3, 128, 64, AUDIO);
+    comp_image(display, Point::new(34, 51), SELECT);
+}
+
+fn screen_audio_select<T>(display: &mut T, state: &State, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(index), 3, 128, 64, AUDIO);
+}
+
+// -------- Components --------
+
+fn comp_value<T>(display: &mut T, position: Point, val: f32, index: usize)
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    let text = format!("{:.1}", val);
+    match index {
+        0 => {
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(1.0 - val), 32, 64, 28, RANGE1);
+            Text::with_text_style(&text, position + Point::new(1, 22), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
+        }
+        1 => {
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(val), 32, 64, 28, RANGE2);
+            Text::with_text_style(&text, position + Point::new(51, 22), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
+        }
+        2 => {
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(1.0 - val), 32, 64, 28, RANGE3);
+            Text::with_text_style(&text, position + Point::new(1, 1), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
+        }
+        3 => {
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(val), 32, 64, 28, RANGE4);
+            Text::with_text_style(&text, position + Point::new(51, 1), CHARACTERSTYLE, TEXTSTYLE).draw(display).unwrap();
+        }
+        _ => ()
+    }
+}
+
+enum SpritesheetIndex {
+    Normalized(f32),
+    Index(usize)
+}
+
+fn comp_spritesheet<T>(display: &mut T, position: Point, val: SpritesheetIndex, items: i32, width: i32, height: i32, bytes: &'static [u8])
+where
+    T: DrawTarget<Color = BinaryColor>,
+    T::Error: Debug,
+{
+    let mut index = match val {
+        SpritesheetIndex::Normalized(v) => {
+            let clamped_val = v.max(0.0).min(1.0);
+            (clamped_val * (items - 1) as f32).floor() as usize
+        },
+        SpritesheetIndex::Index(i) => i,
     };
 
-    let width: i32 = 23;
-    let height: i32 = 8;
+    index = index % items as usize;
+
     let x_offset = index as i32 * width;
 
     let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
-    let spritesheet_bmp = Bmp::from_slice(TRIGGER01).unwrap();
+    let spritesheet_bmp = Bmp::from_slice(bytes).unwrap();
     let image = spritesheet_bmp.sub_image(&area);
     Image::new(&image, position).draw(display).unwrap();
 }
 
-fn draw_shader_frame<T>(display: &mut T, position: Point, index: usize)
+fn comp_image<T>(display: &mut T, position: Point, bytes: &'static [u8])
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let character_style = MonoTextStyle::new(&FONT_5X7, BinaryColor::Off);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Center)
-        .build();
-
-
-    let image = Bmp::from_slice(SHADERFRAME).unwrap();
-    Image::new(&image, position).draw(display).unwrap();
-
-    let text = format!("S0{}", index);
-    Text::with_text_style(&text, position + Point::new(10, 2), character_style, text_style)
-        .draw(display).unwrap();
+    let base = Bmp::from_slice(bytes).unwrap();
+    Image::new(&base, position).draw(display).unwrap();
 }
 
-fn draw_rounded<T>(display: &mut T)
+fn comp_trigger<T>(display: &mut T, position: Point, val: f32)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    Line::new(Point::new(24, 0), Point::new(126, 0))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
+    let index = if val > 0.5 { 1 } else { 0 };
 
-    Line::new(Point::new(127, 1), Point::new(127, 8))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-
-    Line::new(Point::new(126, 9), Point::new(24, 9))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-
-    Line::new(Point::new(23, 8), Point::new(23, 1))
-    .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-    .draw(display).unwrap();
-}
-
-
-fn draw_bar<T>(display: &mut T, position: Point, val: f32, label: &str)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    const BAR_TOP_LEFT: Point = Point::new(9, 9);
-    const BAR_BOTTOM_RIGHT: Point = Point::new(13, 41);
-    const LABEL_POS: Point = Point::new(11, 0);
-    const VALUE_POS: Point = Point::new(11, 46);
-
-    let character_style = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
-    let text_style = TextStyleBuilder::new()
-        .baseline(embedded_graphics::text::Baseline::Top)
-        .alignment(embedded_graphics::text::Alignment::Center)
-        .build();
-    let fill = PrimitiveStyle::with_fill(BinaryColor::On);
-
-    // Label
-    Text::with_text_style(label, position + LABEL_POS, character_style, text_style)
-        .draw(display).unwrap();
-
-    // Base
-    let base = Bmp::from_slice(RANGE12BASE).unwrap();
-    Image::new(&base, Point::new(position.x, position.y + 7)).draw(display).unwrap();
-
-    // Bar
-    let bar_y_max = position.y + BAR_TOP_LEFT.y;
-    let bar_y_min = position.y + BAR_BOTTOM_RIGHT.y;
-
-    let top = lerp(bar_y_min as f32, bar_y_max as f32, val.clamp(0.0, 1.0)) as i32;
-    let bar_top_left = position + BAR_TOP_LEFT;
-    let bar_bottom_right = position + BAR_BOTTOM_RIGHT;
-
-    Rectangle::with_corners(Point::new(bar_top_left.x, top), bar_bottom_right)
-        .into_styled(fill)
-        .draw(display).unwrap();
-
-    // Value
-    let text = format!("{:.2}", val);
-    Text::with_text_style(&text, position + VALUE_POS, character_style, text_style)
-        .draw(display).unwrap();
+    comp_spritesheet(display, position, SpritesheetIndex::Index(index), 4, 11, 3, TRIGGER);
 }
 
 fn lerp(min: f32, max: f32, val: f32) -> f32 {

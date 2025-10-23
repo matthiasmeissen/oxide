@@ -27,6 +27,7 @@ pub fn start_graphics_thread(window_sender: Sender<Message>, window_reader: Outp
         // Resolution has to be set at three points (here, Stage impl, state.rs)
         window_width: 960,
         window_height: 540,
+        fullscreen: true,
         ..Default::default()
     };
 
@@ -130,8 +131,8 @@ impl Stage {
             start_time: Instant::now(),
             sender,
             reader,
-            mq_resolution: [960.0, 540.0],
-            is_fullscreen: false,
+            mq_resolution: [width, height],
+            is_fullscreen: true,
             shader_paths,
             current_shader_index,
             last_fps_update: Instant::now(),
@@ -239,17 +240,27 @@ impl EventHandler for Stage {
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
         let dpi_factor = miniquad::window::dpi_scale();
-
         let norm_x = x / dpi_factor / self.mq_resolution[0];
         let norm_y = y / dpi_factor / self.mq_resolution[1];
 
         if norm_x >= 0.0 && norm_x <= 1.0 && norm_y >= 0.0 && norm_y <= 1.0 {
-            self.sender.try_send(Message::SetValue(0, norm_x)).ok();
-            self.sender.try_send(Message::SetValue(1, norm_y)).ok();
+            let u1 = norm_x;
+            let u2 = norm_y;
+            let u3 = 1.0 - norm_x;
+            let u4 = 1.0 - norm_y;
+
+            self.sender.try_send(Message::SetValue(0, u1)).ok();
+            self.sender.try_send(Message::SetValue(1, u2)).ok();
+            self.sender.try_send(Message::SetValue(2, u3)).ok();
+            self.sender.try_send(Message::SetValue(3, u4)).ok();
         }
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, _keymods: KeyMods, _repeat: bool) {
+    fn key_down_event(&mut self, keycode: KeyCode, _keymods: KeyMods, repeat: bool) {
+        if repeat {
+            return
+        }
+
         match keycode {
             KeyCode::Key1 => {self.sender.try_send(Message::SetValue(4, 1.0)).ok();},
             KeyCode::Key2 => {self.sender.try_send(Message::SetValue(5, 1.0)).ok();},
