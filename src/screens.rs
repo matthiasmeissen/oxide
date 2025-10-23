@@ -29,6 +29,8 @@ const SHADER01: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/sha
 const SHADER02: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-02.bmp");
 const SHADER03: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-03.bmp");
 
+const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-001/audio-001.bmp");
+
 const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
 const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
 
@@ -67,10 +69,10 @@ where
     comp_value(display, Point::new(0, 36), state.values[2], 2);
     comp_value(display, Point::new(64, 36), state.values[3], 3);
     
-    comp_trigger(display, Point::new(50, 9), state.values[4], 0.0);
-    comp_trigger(display, Point::new(67, 9), state.values[5], 2.0);
-    comp_trigger(display, Point::new(50, 59), state.values[6], 4.0);
-    comp_trigger(display, Point::new(67, 59), state.values[7], 6.0);
+    comp_trigger(display, Point::new(50, 9), state.values[4]);
+    comp_trigger(display, Point::new(67, 9), state.values[5]);
+    comp_trigger(display, Point::new(50, 59), state.values[6]);
+    comp_trigger(display, Point::new(67, 59), state.values[7]);
 }
 
 fn screen_home_settings<T>(display: &mut T, state: &State, index: usize)
@@ -112,7 +114,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_select_list(display, state.dsp_type.get_index(), DSP_NAMES);
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.dsp_type.get_index()), 3, 128, 64, AUDIO);
     comp_image(display, Point::new(34, 51), SHADERSELECT);
 }
 
@@ -121,7 +123,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_select_list(display, index, DSP_NAMES);
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(index), 3, 128, 64, AUDIO);
 }
 
 // -------- Components --------
@@ -191,31 +193,45 @@ where
     let text = format!("{:.1}", val);
     match index {
         0 => {
-            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, RANGE1);
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(1.0 - val), 32, 64, 28, RANGE1);
             comp_text(display, position + Point::new(1, 22), &text);
         }
         1 => {
-            comp_spritesheet(display, position, val, 32, 64, 28, RANGE2);
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(val), 32, 64, 28, RANGE2);
             comp_text(display, position + Point::new(51, 22), &text);
         }
         2 => {
-            comp_spritesheet(display, position, 1.0 - val, 32, 64, 28, RANGE3);
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(1.0 - val), 32, 64, 28, RANGE3);
             comp_text(display, position + Point::new(1, 1), &text);
         }
         3 => {
-            comp_spritesheet(display, position, val, 32, 64, 28, RANGE4);
+            comp_spritesheet(display, position, SpritesheetIndex::Normalized(val), 32, 64, 28, RANGE4);
             comp_text(display, position + Point::new(51, 1), &text);
         }
         _ => ()
     }
 }
 
-fn comp_spritesheet<T>(display: &mut T, position: Point, val: f32, items: i32, width: i32, height: i32, bytes: &'static [u8])
+enum SpritesheetIndex {
+    Normalized(f32),
+    Index(usize)
+}
+
+fn comp_spritesheet<T>(display: &mut T, position: Point, val: SpritesheetIndex, items: i32, width: i32, height: i32, bytes: &'static [u8])
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let index = (val * items as f32).floor() as usize;
+    let mut index = match val {
+        SpritesheetIndex::Normalized(v) => {
+            let clamped_val = v.max(0.0).min(1.0);
+            (clamped_val * (items - 1) as f32).floor() as usize
+        },
+        SpritesheetIndex::Index(i) => i,
+    };
+
+    index = index % items as usize;
+
     let x_offset = index as i32 * width;
 
     let area = Rectangle::new(Point::new(x_offset, 0), Size::new(width as u32, height as u32));
@@ -233,18 +249,14 @@ where
     Image::new(&base, position).draw(display).unwrap();
 }
 
-fn comp_trigger<T>(display: &mut T, position: Point, val: f32, index: f32)
+fn comp_trigger<T>(display: &mut T, position: Point, val: f32)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    let val = if val > 0.5 {
-        (index + 1.0) / 4.0
-    } else {
-        (index + 0.0) / 4.0
-    };
+    let index = if val > 0.5 { 1 } else { 0 };
 
-    comp_spritesheet(display, position, val, 4, 11, 3, TRIGGER);
+    comp_spritesheet(display, position, SpritesheetIndex::Index(index), 4, 11, 3, TRIGGER);
 }
 
 fn lerp(min: f32, max: f32, val: f32) -> f32 {
