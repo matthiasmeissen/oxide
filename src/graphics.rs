@@ -380,9 +380,10 @@ impl EventHandler for Stage {
 
     #[inline]
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let dpi_factor = miniquad::window::dpi_scale();
-        let norm_x = x / dpi_factor / self.mq_resolution[0];
-        let norm_y = y / dpi_factor / self.mq_resolution[1];
+        let (width, height) = miniquad::window::screen_size();
+        
+        let norm_x = (x / width).clamp(0.0, 1.0);
+        let norm_y = (y / height).clamp(0.0, 1.0);
 
         if norm_x >= 0.0 && norm_x <= 1.0 && norm_y >= 0.0 && norm_y <= 1.0 {
             let u1 = norm_x;
