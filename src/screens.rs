@@ -24,15 +24,9 @@ const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-00
 const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-3.bmp");
 const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-4.bmp");
 
-const SHADERSELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-select.bmp");
-const SHADER01: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-01.bmp");
-const SHADER02: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-02.bmp");
-const SHADER03: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-03.bmp");
-
+const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-select.bmp");
+const SHADER: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001.bmp");
 const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-001/audio-001.bmp");
-
-const SHADER_NAMES: &[&str] = &["Shader 1", "Shader 2", "Shader 3"];
-const DSP_NAMES: &[&str] = &["Simple Sine", "Basic FM", "Drum Engine"];
 
 pub fn draw<T>(display: &mut T, state: &DisplayState)
 where
@@ -93,10 +87,8 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_select_shader_image(display, state.shader_index);
-    let num = format!("{}", state.shader_index);
-    comp_dark_text(display, Point { x: 117, y: 4 }, &num);
-    comp_image(display, Point::new(34, 51), SHADERSELECT);
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.shader_index), 3, 128, 64, SHADER);
+    comp_image(display, Point::new(34, 51), SELECT);
 }
 
 fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
@@ -104,9 +96,7 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_select_shader_image(display, index);
-    let num = format!("{}", index);
-    comp_dark_text(display, Point { x: 117, y: 4 }, &num);
+    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(index), 3, 128, 64, SHADER);
 }
 
 fn screen_audio<T>(display: &mut T, state: &State)
@@ -115,7 +105,7 @@ where
     T::Error: Debug,
 {
     comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.dsp_type.get_index()), 3, 128, 64, AUDIO);
-    comp_image(display, Point::new(34, 51), SHADERSELECT);
+    comp_image(display, Point::new(34, 51), SELECT);
 }
 
 fn screen_audio_select<T>(display: &mut T, state: &State, index: usize)
@@ -156,33 +146,6 @@ where
 
     Text::with_text_style(&text, position, character_style, text_style)
         .draw(display).unwrap();
-}
-
-fn comp_select_list<T>(display: &mut T, index: usize, list: &[&str])
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    for (i, item) in list.iter().enumerate() {
-        let offset_y = (i as i32 * 8) + 2;
-        if i == index {
-            comp_text(display, Point { x: 2, y: offset_y }, ">");
-        }
-        comp_text(display, Point { x: 12, y: offset_y }, item);
-    }
-}
-
-fn comp_select_shader_image<T>(display: &mut T, index: usize)
-where
-    T: DrawTarget<Color = BinaryColor>,
-    T::Error: Debug,
-{
-    match index {
-        0 => comp_image(display, Point::new(0, 0), SHADER01),
-        1 => comp_image(display, Point::new(0, 0), SHADER02),
-        2 => comp_image(display, Point::new(0, 0), SHADER03),
-        _ => comp_image(display, Point::new(0, 0), SHADER01),
-    }
 }
 
 fn comp_value<T>(display: &mut T, position: Point, val: f32, index: usize)
