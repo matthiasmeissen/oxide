@@ -21,17 +21,15 @@ uniform float u_gate4;
 vec3 applyCornerOverlay(vec3 baseColor, vec2 uv, vec2 cornerPos, float overlaySize, float blendAmount) {
     vec2 overlayMin = cornerPos * (1.0 - overlaySize);
     vec2 overlayMax = overlayMin + overlaySize;
-    
-    if (uv.x < overlayMin.x || uv.x > overlayMax.x || 
-        uv.y < overlayMin.y || uv.y > overlayMax.y) {
-        return baseColor;
-    }
-    
+
     vec2 overlayUV = (uv - overlayMin) / overlaySize;
     overlayUV.y = 1.0 - overlayUV.y;
     vec3 texColor = texture2D(u_texture, overlayUV).rgb;
-    
-    return mix(baseColor, texColor, blendAmount);
+
+    vec2 inside = step(overlayMin, uv) * (1.0 - step(overlayMax, uv));
+    float mask = inside.x * inside.y;
+
+    return mix(baseColor, texColor, blendAmount * mask);
 }
 
 void main() {

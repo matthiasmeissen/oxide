@@ -147,6 +147,7 @@ struct Stage {
     last_fps_update: Instant,
     frames_since_update: u32,
     display_update_counter: u32,
+    show_oled_preview: bool,
 }
 
 impl Stage {
@@ -254,6 +255,7 @@ impl Stage {
             last_fps_update: Instant::now(),
             frames_since_update: 0,
             display_update_counter: 0,
+            show_oled_preview: false,
         }
     }
 
@@ -334,10 +336,12 @@ impl EventHandler for Stage {
 
         // OPTIMIZED: Update display texture every 2 frames (30fps for 60fps main)
         // Adjust divisor based on your needs: 1=60fps, 2=30fps, 3=20fps, 4=15fps
-        self.display_update_counter += 1;
-        if self.display_update_counter >= 2 {
-            self.update_display_texture();
-            self.display_update_counter = 0;
+        if self.show_oled_preview {
+            self.display_update_counter += 1;
+            if self.display_update_counter >= 2 {
+                self.update_display_texture();
+                self.display_update_counter = 0;
+            }
         }
     }
 
@@ -414,6 +418,10 @@ impl EventHandler for Stage {
             KeyCode::F => {
                 self.is_fullscreen = !self.is_fullscreen;
                 window::set_fullscreen(self.is_fullscreen);
+            },
+            KeyCode::O => {
+                self.show_oled_preview = !self.show_oled_preview;
+                println!("OLED Preview: {}", if self.show_oled_preview { "ON" } else { "OFF" });
             },
             KeyCode::Right => {
                 let next_index = self.current_shader_index + 1;
