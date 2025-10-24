@@ -25,20 +25,6 @@ const VERTEX: &str = r#"
     }
 "#;
 
-const OLED_FRAGMENT_SHADER: &str = r#"
-    #version 100
-    precision mediump float;
-
-    varying vec2 v_uv;
-    uniform sampler2D u_oled_texture;
-
-    void main() {
-        // Sample the color from the texture. Flip the y-coordinate 
-        // to correctly orient the display.
-        gl_FragColor = texture2D(u_oled_texture, vec2(v_uv.x, 1.0 - v_uv.y));
-    }
-"#;
-
 pub fn start_graphics_thread(
     window_sender: Sender<Message>, 
     window_reader: Output<State>,
@@ -145,21 +131,15 @@ impl OriginDimensions for DisplayBuffer {
 }
 
 struct Stage {
-    main_pipeline: Pipeline,
-    main_bindings: Bindings,
-
-    oled_pipeline: Pipeline,
-    oled_bindings: Bindings,
-
+    pipeline: Pipeline,
+    bindings: Bindings,
     ctx: Box<dyn RenderingBackend>,
     start_time: std::time::Instant,
     sender: Sender<Message>,
     reader: Output<State>,
-
     display_reader: Output<DisplayState>,
     display_buffer: DisplayBuffer,
     display_texture: TextureId,
-
     mq_resolution: [f32; 2],
     is_fullscreen: bool,
     shader_paths: Vec<String>,
@@ -174,99 +154,83 @@ impl Stage {
     fn new(sender: Sender<Message>, reader: Output<State>, mut display_reader: Output<DisplayState>) -> Self {
         let mut ctx = window::new_rendering_backend();
 
-        // =======================================================================
-        // SETUP MAIN QUAD
-        // =======================================================================
+        // Define vertices with position and uv
         let vertices: [Vertex; 4] = [
             Vertex {pos: [-1.0, -1.0], uv: [0.0, 0.0]},
             Vertex {pos: [1.0, -1.0], uv: [1.0, 0.0]},
             Vertex {pos: [1.0, 1.0], uv: [1.0, 1.0]},
             Vertex {pos: [-1.0, 1.0], uv: [0.0, 1.0]},
         ];
-        let main_vertex_buffer = ctx.new_buffer(
-            BufferType::VertexBuffer, BufferUsage::Immutable, BufferSource::slice(&vertices)
-        );
-        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-        let main_index_buffer = ctx.new_buffer(
-            BufferType::IndexBuffer, BufferUsage::Immutable, BufferSource::slice(&indices)
+
+        // Create vertex buffer with the defined vertices
+        let vertex_buffer = ctx.new_buffer(
+            BufferType::VertexBuffer, 
+            BufferUsage::Immutable, 
+            BufferSource::slice(&vertices)
         );
 
-        // =======================================================================
-        // 2. SETUP OLED TEXTURE
-        // =======================================================================
+        // Define indices, in which order the vertices connect
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+        // Create index buffer with the defined indices
+        let index_buffer = ctx.new_buffer(
+            BufferType::IndexBuffer, 
+            BufferUsage::Immutable, 
+            BufferSource::slice(&indices)
+        );
+
+        // Create display buffer and texture
         let mut display_buffer = DisplayBuffer::new();
+        
+        // Render initial display state
         let display_state = display_reader.read();
         display_buffer.clear();
-
         draw(&mut display_buffer, &display_state);
+        
+        // Create texture from display buffer
         let initial_rgba = display_buffer.to_rgba();
         let display_texture = ctx.new_texture_from_rgba8(128, 64, initial_rgba);
         ctx.texture_set_filter(display_texture, FilterMode::Nearest, MipmapFilterMode::None);
 
-        // =======================================================================
-        // 3. SETUP MAIN PIPELINE
-        // =======================================================================
+        // Load shaders from directory
         let shader_paths = load_shaders_from_dir(std::path::Path::new("assets/shaders"))
             .expect("Failed to load shaders from 'assets/shaders' directory.");
 
         if shader_paths.is_empty() {
-            panic!("No visualizer shaders found in 'assets/shaders'.");
+            panic!("No files found in 'assets/shaders'.");
         }
+        
+        println!("Loaded shaders: {:?}", shader_paths);
 
         let current_shader_index = 0;
         let initial_shader_source = std::fs::read_to_string(&shader_paths[current_shader_index])
             .expect("Error reading the initial shader");
 
-        let main_shader = ctx.new_shader(
-            ShaderSource::Glsl { vertex: VERTEX, fragment: &initial_shader_source },
-            main_shader_meta()
-        ).expect("Main shader compilation failed");
+        // Create shader by loading vertex and fragment shader files
+        // as well as setting meta information
+        let shader = ctx.new_shader(
+            ShaderSource::Glsl { 
+                vertex: VERTEX, 
+                fragment: &initial_shader_source, 
+            },
+            shader_meta()
+        ).expect("Something is not working");
 
-        // Main bindings no longer include the texture!
-        let main_bindings = Bindings {
-            vertex_buffers: vec![main_vertex_buffer],
-            index_buffer: main_index_buffer,
-            images: vec![] // <-- Texture removed
+        // Create bindings with display texture
+        let bindings = Bindings {
+            vertex_buffers: vec![vertex_buffer],
+            index_buffer: index_buffer,
+            images: vec![display_texture]
         };
 
-        let main_pipeline = ctx.new_pipeline(
+        // Create pipeline
+        let pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
-            &[VertexAttribute::new("in_pos", VertexFormat::Float2), VertexAttribute::new("in_uv", VertexFormat::Float2)],
-            main_shader, PipelineParams::default()
-        );
-
-        // =======================================================================
-        // 4. SETUP OLED PIPELINE
-        // =======================================================================
-        let oled_vertices: [Vertex; 4] = [
-            Vertex { pos: [0.35, -0.95],      uv: [0.0, 0.0] }, // Bottom-left
-            Vertex { pos: [0.95, -0.95],      uv: [1.0, 0.0] }, // Bottom-right
-            Vertex { pos: [0.95, -0.4166667], uv: [1.0, 1.0] }, // Top-right
-            Vertex { pos: [0.35, -0.4166667], uv: [0.0, 1.0] }, // Top-left
-        ];
-        let oled_vertex_buffer = ctx.new_buffer(
-            BufferType::VertexBuffer, BufferUsage::Immutable, BufferSource::slice(&oled_vertices)
-        );
-        let oled_index_buffer = ctx.new_buffer( // Can reuse the same index data
-            BufferType::IndexBuffer, BufferUsage::Immutable, BufferSource::slice(&indices)
-        );
-        
-        // Bind the oled geometry and the SHARED display_texture
-        let oled_bindings = Bindings {
-            vertex_buffers: vec![oled_vertex_buffer],
-            index_buffer: oled_index_buffer,
-            images: vec![display_texture],
-        };
-
-        let oled_shader = ctx.new_shader(
-            ShaderSource::Glsl { vertex: VERTEX, fragment: OLED_FRAGMENT_SHADER },
-            oled_shader_meta()
-        ).expect("OLED shader compilation failed");
-
-        let oled_pipeline = ctx.new_pipeline(
-            &[BufferLayout::default()],
-            &[VertexAttribute::new("in_pos", VertexFormat::Float2), VertexAttribute::new("in_uv", VertexFormat::Float2)],
-            oled_shader,
+            &[
+                VertexAttribute::new("in_pos", VertexFormat::Float2),
+                VertexAttribute::new("in_uv", VertexFormat::Float2)
+            ],
+            shader,
             PipelineParams::default()
         );
 
@@ -275,12 +239,8 @@ impl Stage {
         sender.try_send(Message::SetResolution(width, height)).ok();
 
         Self { 
-            main_pipeline,
-            main_bindings,
-
-            oled_pipeline,
-            oled_bindings,
-
+            pipeline, 
+            bindings, 
             ctx,
             start_time: Instant::now(),
             sender,
@@ -295,22 +255,26 @@ impl Stage {
             last_fps_update: Instant::now(),
             frames_since_update: 0,
             display_update_counter: 0,
-            show_oled_preview: true,
+            show_oled_preview: false,
         }
     }
 
     #[inline]
     fn update_display_texture(&mut self) {
+        // Get the current display state
         let display_state = self.display_reader.read();
         
+        // Clear and draw to buffer
         self.display_buffer.clear();
         draw(&mut self.display_buffer, &display_state);
         
+        // Convert to RGBA and update texture (now returns &[u8] instead of Vec<u8>)
         let rgba_data = self.display_buffer.to_rgba();
         self.ctx.texture_update(self.display_texture, rgba_data);
     }
 
     fn set_shader(&mut self, new_index: usize) {
+        // This cycles through all available shaders
         let wrapped_index = new_index % self.shader_paths.len();
         if wrapped_index == self.current_shader_index {
             return;
@@ -323,7 +287,7 @@ impl Stage {
             Ok(fragment_source) => {
                 match self.ctx.new_shader(
                     ShaderSource::Glsl { vertex: VERTEX, fragment: &fragment_source },
-                    main_shader_meta()
+                    shader_meta()
                 ) {
                     Ok(new_shader) => {
                         let new_pipeline = self.ctx.new_pipeline(
@@ -336,7 +300,7 @@ impl Stage {
                             PipelineParams::default()
                         );
 
-                        self.main_pipeline = new_pipeline;
+                        self.pipeline = new_pipeline;
                         println!("Successfully swapped to shader: {}", new_shader_path);
                     }
                     Err(err) => {
@@ -374,7 +338,7 @@ impl EventHandler for Stage {
         // Adjust divisor based on your needs: 1=60fps, 2=30fps, 3=20fps, 4=15fps
         if self.show_oled_preview {
             self.display_update_counter += 1;
-            if self.display_update_counter >= 4 {
+            if self.display_update_counter >= 2 {
                 self.update_display_texture();
                 self.display_update_counter = 0;
             }
@@ -383,13 +347,9 @@ impl EventHandler for Stage {
 
     #[inline]
     fn draw(&mut self) {
-        self.ctx.begin_default_pass(PassAction::Clear {
-            color: Some((0.0, 0.0, 0.0, 1.0)),
-            depth: None,
-            stencil: None,
-        });
-        self.ctx.apply_pipeline(&self.main_pipeline);
-        self.ctx.apply_bindings(&self.main_bindings);
+        self.ctx.begin_default_pass(PassAction::Nothing);
+        self.ctx.apply_pipeline(&self.pipeline);
+        self.ctx.apply_bindings(&self.bindings);
 
         let time = self.start_time.elapsed().as_secs_f64();
         self.sender.try_send(Message::SetTime(time)).ok();
@@ -411,12 +371,6 @@ impl EventHandler for Stage {
         self.ctx.apply_uniforms(UniformsSource::table(&uniforms));
 
         self.ctx.draw(0, 6, 1);
-
-        if self.show_oled_preview {
-            self.ctx.apply_pipeline(&self.oled_pipeline);
-            self.ctx.apply_bindings(&self.oled_bindings);
-            self.ctx.draw(0, 6, 1);
-        }
 
         self.ctx.end_render_pass();
         self.ctx.commit_frame();
@@ -511,7 +465,7 @@ struct Uniforms {
     u_gate4: f32,
 }
 
-fn main_shader_meta() -> ShaderMeta {
+fn shader_meta() -> ShaderMeta {
     ShaderMeta { 
         uniforms: UniformBlockLayout { 
             uniforms: vec![
@@ -527,14 +481,7 @@ fn main_shader_meta() -> ShaderMeta {
                 UniformDesc::new("u_gate4", UniformType::Float1),
             ] 
         }, 
-        images: vec![]
-    }
-}
-
-fn oled_shader_meta() -> ShaderMeta {
-    ShaderMeta {
-        uniforms: UniformBlockLayout { uniforms: vec![] },
-        images: vec!["u_oled_texture".to_string()],
+        images: vec!["u_texture".to_string()]
     }
 }
 
