@@ -469,10 +469,22 @@ impl EventHandler for Stage {
                 self.show_oled_preview = !self.show_oled_preview;
                 println!("OLED Preview: {}", if self.show_oled_preview { "ON" } else { "OFF" });
             },
-            KeyCode::Right => {
-                let next_index = self.current_shader_index + 1;
-                self.sender.try_send(Message::SetShaderIndex(next_index)).ok();
+            KeyCode::Up => {
+                let num_shaders = self.shader_paths.len();
+                if num_shaders > 0 {
+                    let next_index = (self.current_shader_index + 1) % num_shaders;
+                    self.sender.try_send(Message::SetShaderIndex(next_index)).ok();
+                }
             },
+            KeyCode::Right => {
+                self.sender.try_send(Message::UiInput(InputEvent::Next)).ok();
+            }
+            KeyCode::Left => {
+                self.sender.try_send(Message::UiInput(InputEvent::Prev)).ok();
+            }
+            KeyCode::Space => {
+                self.sender.try_send(Message::UiInput(InputEvent::Enter)).ok();
+            }
             KeyCode::Escape => {
                 std::process::exit(0);
             }
