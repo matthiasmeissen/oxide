@@ -1,21 +1,11 @@
 
-// Use cargo run --features "simulator"
-// And export LIBRARY_PATH="$LIBRARY_PATH:$(brew --prefix)/lib"
-// To run the display simulator
-
 pub mod state;
 pub mod coordinator;
 pub mod graphics;
 pub mod audio;
 pub mod dsp;
 pub mod midi;
-
-#[cfg(feature = "simulator")]
-pub mod display_simulator;
-
-#[cfg(not(feature = "simulator"))]
 pub mod display;
-#[cfg(not(feature = "simulator"))]
 pub mod i2c;
 pub mod screens;
 
@@ -25,12 +15,9 @@ use graphics::*;
 use audio::*;
 use midi::*;
 
-#[cfg(feature = "simulator")]
-use display_simulator::*;
-
-#[cfg(all(target_os = "linux", not(feature = "simulator")))]
+#[cfg(target_os = "linux")]
 use display::*;
-#[cfg(all(target_os = "linux", not(feature = "simulator")))]
+#[cfg(target_os = "linux")]
 use i2c::*;
 
 use crossbeam_channel;
@@ -51,7 +38,6 @@ fn main() {
 
     #[cfg(target_os = "linux")]
     {
-        println!("Running on target hardware");
         start_display(display_reader);
         start_i2c_thread(sender.clone());
     }
