@@ -1,7 +1,3 @@
-
-// Use cargo run --features "simulator"
-// To run the display simulator
-
 pub mod state;
 pub mod coordinator;
 pub mod graphics;
@@ -30,12 +26,12 @@ fn main() {
     midi::start_midi_thread(sender.clone());
     audio::start_audio_thread(audio_reader);
 
-    graphics::start_graphics_thread(sender.clone(), window_reader, graphics_display_reader);
-
     #[cfg(target_os = "linux")]
     {
         println!("Running on target hardware");
         display::start_display(oled_display_reader);
         i2c::start_i2c_thread(sender.clone());
     }
+
+    graphics::start_graphics_thread(sender.clone(), window_reader, graphics_display_reader);
 }
