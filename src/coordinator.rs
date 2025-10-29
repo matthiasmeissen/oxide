@@ -16,7 +16,8 @@ impl Coordinator {
     fn run (mut self,
         receiver: Receiver<Message>,
         mut window_writer: Input<State>,
-        mut display_writer: Input<DisplayState>,
+        mut graphics_display_writer: Input<DisplayState>,
+        mut oled_display_writer: Input<DisplayState>,
         mut audio_writer: Input<State>,
     ) {
         let mut last_published_app_state = self.app_state;
@@ -42,7 +43,8 @@ impl Coordinator {
                     app: self.app_state,
                     ui: self.ui_state,
                 };
-                display_writer.write(display_payload);
+                graphics_display_writer.write(display_payload);
+                oled_display_writer.write(display_payload);
                 last_published_ui_state = self.ui_state
             }
 
@@ -217,7 +219,8 @@ impl Coordinator {
 pub fn start_coordinator_thread(
     receiver: Receiver<Message>,
     window_writer: Input<State>,
-    display_writer: Input<DisplayState>,
+    graphics_display_writer: Input<DisplayState>,
+    oled_display_writer: Input<DisplayState>,
     audio_writer: Input<State>,
 ) {
     thread::spawn(move || {
@@ -226,7 +229,7 @@ pub fn start_coordinator_thread(
             ui_state: Screen::default(),
         };
 
-        coordinator.run(receiver, window_writer, display_writer, audio_writer);
+        coordinator.run(receiver, window_writer, graphics_display_writer, oled_display_writer, audio_writer);
     });
 }
 

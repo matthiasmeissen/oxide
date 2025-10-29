@@ -5,6 +5,7 @@ varying vec2 v_uv;
 
 uniform float u_time;
 uniform vec2 u_resolution;
+
 uniform float u_cv1;
 uniform float u_cv2;
 uniform float u_cv3;
@@ -20,7 +21,6 @@ void main() {
     vec2 uv = v_uv;
     vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
 
-    // Parameters
     float freqx = u_cv1 * 40.0;
     float freqy = u_cv2 * 40.0;
     float brightness = mix(0.2, 1.4, u_cv3);
