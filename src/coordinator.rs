@@ -236,3 +236,61 @@ pub fn start_coordinator_thread(
 fn normalize_midi(value: u8) -> f32 {
     value as f32 / 128.0
 }
+
+struct MidiConfig {
+    launch_control_xl: MidiDeviceMapping,
+    opz: MidiDeviceMapping,
+    deluge: MidiDeviceMapping,
+}
+
+impl MidiConfig {
+    fn new() -> Self {
+        Self { 
+            launch_control_xl: MidiDeviceMapping {
+                v0_cv: Some(77),
+                v1_cv: Some(78),
+                v2_cv: Some(79),
+                v3_cv: Some(80),
+                
+                v4_gate: Some(73),
+                v5_gate: Some(74),
+                v6_gate: Some(75),
+                v7_gate: Some(76),
+
+                prev_ui: Some(106),
+                next_ui: Some(107),
+                enter_ui: Some(105),
+            }, 
+            opz: MidiDeviceMapping {
+                v0_cv: Some(1),
+                v1_cv: Some(2),
+                v2_cv: Some(3),
+                v3_cv: Some(4),
+                
+                v4_gate: Some(53),
+                v5_gate: Some(54),
+                v6_gate: Some(55),
+                v7_gate: Some(56),
+
+                prev_ui: None,
+                next_ui: None,
+                enter_ui: None,
+            }, 
+            deluge: MidiDeviceMapping {
+                v0_cv: Some(0),
+                v1_cv: Some(1),
+                v2_cv: Some(2),
+                v3_cv: Some(3),
+                
+                v4_gate: Some(60),
+                v5_gate: Some(62),
+                v6_gate: Some(64),
+                v7_gate: Some(65),
+
+                prev_ui: None,
+                next_ui: None,
+                enter_ui: None,
+            }, 
+        }
+    }
+}

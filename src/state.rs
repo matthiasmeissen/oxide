@@ -122,19 +122,19 @@ impl fmt::Display for DspType {
 
 pub struct MidiDeviceMapping {
     // CC values for knobs/sliders
-    v0_cv: Option<u8>,
-    v1_cv: Option<u8>,
-    v2_cv: Option<u8>,
-    v3_cv: Option<u8>,
+    pub v0_cv: Option<u8>,
+    pub v1_cv: Option<u8>,
+    pub v2_cv: Option<u8>,
+    pub v3_cv: Option<u8>,
     
     // Gate values for momentary buttons
-    v4_gate: Option<u8>,
-    v5_gate: Option<u8>,
-    v6_gate: Option<u8>,
-    v7_gate: Option<u8>,
+    pub v4_gate: Option<u8>,
+    pub v5_gate: Option<u8>,
+    pub v6_gate: Option<u8>,
+    pub v7_gate: Option<u8>,
 
     // UI Navigation
-    prev_ui: Option<u8>,
-    next_ui: Option<u8>,
-    enter_ui: Option<u8>,
+    pub prev_ui: Option<u8>,
+    pub next_ui: Option<u8>,
+    pub enter_ui: Option<u8>,
 }
