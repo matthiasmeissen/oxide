@@ -9,7 +9,8 @@ const NUM_DSP: usize = 3;
 
 struct Coordinator {
     app_state: State,
-    ui_state: Screen
+    ui_state: Screen,
+    midi_config: MidiConfig
 }
 
 impl Coordinator {
@@ -126,91 +127,36 @@ impl Coordinator {
     }
 
     fn handle_midi_input(&mut self, device: MidiDevice, midi: MidiMessage) {
+        let mapping = match device {
+            MidiDevice::LaunchControlXL => &self.midi_config.launch_control_xl,
+            MidiDevice::OPZ => &self.midi_config.opz,
+            MidiDevice::Deluge => &self.midi_config.deluge,
+            MidiDevice::Undefined => return,
+        };
+
         match midi {
             MidiMessage::ControlChange { controller, value } => {
-                match device {
-                    MidiDevice::LaunchControlXL => {
-                        // From Novation
-                        if controller == 77 { self.app_state.values[0] = normalize_midi(value); }
-                        if controller == 78 { self.app_state.values[1] = normalize_midi(value); }
-                        if controller == 79 { self.app_state.values[2] = normalize_midi(value); }
-                        if controller == 80 { self.app_state.values[3] = normalize_midi(value); }
+                if Some(controller) == mapping.v0_cv { self.app_state.values[0] = normalize_midi(value); }
+                else if Some(controller) == mapping.v1_cv { self.app_state.values[1] = normalize_midi(value); }
+                else if Some(controller) == mapping.v2_cv { self.app_state.values[2] = normalize_midi(value); }
+                else if Some(controller) == mapping.v3_cv { self.app_state.values[3] = normalize_midi(value); }
 
-                        if controller == 106 { if value == 127 {self.handle_ui_input(InputEvent::Prev);} else {} }
-                        if controller == 107 { if value == 127 {self.handle_ui_input(InputEvent::Next);} else {} }
-                    },
-                    MidiDevice::OPZ => {
-                        // From OP-Z
-                        if controller == 1 { self.app_state.values[0] = normalize_midi(value); }
-                        if controller == 2 { self.app_state.values[1] = normalize_midi(value); }
-                        if controller == 3 { self.app_state.values[2] = normalize_midi(value); }
-                        if controller == 4 { self.app_state.values[3] = normalize_midi(value); }
-                    }
-                    MidiDevice::Deluge => {
-                        if controller == 0 { self.app_state.values[0] = normalize_midi(value); }
-                        if controller == 1 { self.app_state.values[1] = normalize_midi(value); }
-                        if controller == 2 { self.app_state.values[2] = normalize_midi(value); }
-                        if controller == 3 { self.app_state.values[3] = normalize_midi(value); }
-                    }
-                    _ => ()
-                }
+                else if Some(controller) == mapping.prev_ui && value == 127 { self.handle_ui_input(InputEvent::Prev); }
+                else if Some(controller) == mapping.next_ui && value == 127 { self.handle_ui_input(InputEvent::Next); }
                 //println!("{:?}", self.app_state);
             }
             MidiMessage::NoteOn { note, .. } => {
-                match device {
-                    MidiDevice::LaunchControlXL => {
-                        // From Novation
-                        if note == 73 { self.app_state.values[4] = 1.0 }
-                        if note == 74 { self.app_state.values[5] = 1.0 }
-                        if note == 75 { self.app_state.values[6] = 1.0 }
-                        if note == 76 { self.app_state.values[7] = 1.0 }
-                        
-                        if note == 105 { self.handle_ui_input(InputEvent::Enter); }
-
-                        if note == 41 { self.app_state.shader_index = 0 }
-                        if note == 42 { self.app_state.shader_index = 1 }
-                        if note == 43 { self.app_state.shader_index = 2 }
-
-                        if note == 57 { self.app_state.dsp_type = DspType::SimpleSine }
-                        if note == 58 { self.app_state.dsp_type = DspType::DrumEngine }
-                        if note == 59 { self.app_state.dsp_type = DspType::BasicFm }
-                    },
-                    MidiDevice::OPZ => {
-                        // From OP-Z
-                        if note == 53 { self.app_state.values[4] = 1.0 }
-                        if note == 54 { self.app_state.shader_index += 1 }
-                    },
-                    MidiDevice::Deluge => {
-                        if note == 60 { self.app_state.values[4] = 1.0 }
-                        if note == 62 { self.app_state.values[5] = 1.0 }
-                        if note == 64 { self.app_state.values[6] = 1.0 }
-                        if note == 65 { self.app_state.values[7] = 1.0 }
-                    }
-                    _ => ()
-                }
-
+                if Some(note) == mapping.v4_gate { self.app_state.values[4] = 1.0; }
+                else if Some(note) == mapping.v5_gate { self.app_state.values[5] = 1.0; }
+                else if Some(note) == mapping.v6_gate { self.app_state.values[6] = 1.0; }
+                else if Some(note) == mapping.v7_gate { self.app_state.values[7] = 1.0; }
+                else if Some(note) == mapping.enter_ui { self.handle_ui_input(InputEvent::Enter); }
             }
             MidiMessage::NoteOff { note } => {
-                match device {
-                    MidiDevice::LaunchControlXL => {
-                        // From Novation
-                        if note == 73 { self.app_state.values[4] = 0.0 }
-                        if note == 74 { self.app_state.values[5] = 0.0 }
-                        if note == 75 { self.app_state.values[6] = 0.0 }
-                        if note == 76 { self.app_state.values[7] = 0.0 }
-                    },
-                    MidiDevice::OPZ => {
-                        // From OP-Z
-                        if note == 53 { self.app_state.values[4] = 0.0 }
-                    },
-                    MidiDevice::Deluge => {
-                        if note == 60 { self.app_state.values[4] = 0.0 }
-                        if note == 62 { self.app_state.values[5] = 0.0 }
-                        if note == 64 { self.app_state.values[6] = 0.0 }
-                        if note == 65 { self.app_state.values[7] = 0.0 }
-                    }
-                    _ => ()
-                }
+                if Some(note) == mapping.v4_gate { self.app_state.values[4] = 0.0; }
+                else if Some(note) == mapping.v5_gate { self.app_state.values[5] = 0.0; }
+                else if Some(note) == mapping.v6_gate { self.app_state.values[6] = 0.0; }
+                else if Some(note) == mapping.v7_gate { self.app_state.values[7] = 0.0; }
             }
         }
     }
@@ -227,6 +173,7 @@ pub fn start_coordinator_thread(
         let coordinator = Coordinator {
             app_state: State::default(),
             ui_state: Screen::default(),
+            midi_config: MidiConfig::new(),
         };
 
         coordinator.run(receiver, window_writer, graphics_display_writer, oled_display_writer, audio_writer);
