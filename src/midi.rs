@@ -76,6 +76,7 @@ fn parse_midi_message(message: &[u8]) -> Option<MidiMessage> {
     }
 
     let command = message[0] & 0xF0;
+    let channel = message[0] & 0x0F;
 
     match command {
         // 0x90 = Note On
