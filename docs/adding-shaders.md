@@ -9,8 +9,9 @@ This guide walks through the complete process of adding a new shader to the Oxid
 1. ✅ Add `.glsl` file to `assets/shaders/`
 2. ✅ Create (NUM_SHADERS x 128) × 64 BMP spritesheet with shader previews
 3. ✅ Update `NUM_SHADERS` constant in [coordinator.rs](../src/coordinator.rs)
-4. ✅ Update spritesheet frame count in [screens.rs](../src/screens.rs)
-5. ✅ Build and run
+4. ✅ Build and run
+
+**Note**: `screens.rs` automatically uses `NUM_SHADERS` - no manual update needed!
 
 ---
 
@@ -91,54 +92,36 @@ The system uses `shader_index` to select which 128px slice to display:
 
 ### Step 3: Update Code
 
-You need to update **2 files**:
+You only need to update **1 file**:
 
-#### File 1: [coordinator.rs](../src/coordinator.rs)
+#### [coordinator.rs](../src/coordinator.rs)
 
 Update the shader count constant:
 
 ```rust
 // Line 7
-const NUM_SHADERS: usize = 4;  // Changed from 3
+pub const NUM_SHADERS: usize = 4;  // Changed from 3
 ```
 
-**Why this matters**: This constant is used for UI navigation wraparound. When you press Next/Prev in the shader selection screen, it uses modulo arithmetic to cycle through shaders.
+**Why this matters**:
+- Used for UI navigation wraparound (Next/Prev cycling with modulo arithmetic)
+- Automatically imported by `screens.rs` to set spritesheet frame count
+- Single source of truth for shader count
 
-#### File 2: [screens.rs](../src/screens.rs)
-
-Update the spritesheet frame count in **two places**:
-
+**That's it!** The `screens.rs` file imports this constant and uses it automatically:
 ```rust
-// Line 97 - screen_shader() function
-comp_spritesheet(
-    display_buffer,
-    Point::new(0, 0),
-    state.shader_index,
-    4,    // Changed from 3 - number of frames in spritesheet
-    128,  // Width of each frame
-    64,   // Height
-    SHADER
-);
+// screens.rs:1
+use crate::coordinator::NUM_SHADERS;
 
-// Line 106 - screen_shader_select() function
-comp_spritesheet(
-    display_buffer,
-    Point::new(0, 0),
-    state.selected_index,
-    4,    // Changed from 3 - number of frames in spritesheet
-    128,
-    64,
-    SHADER
-);
+// screens.rs:101 & 118
+comp_spritesheet(..., NUM_SHADERS as i32, ...);
 ```
-
-**Why this matters**: The `comp_spritesheet()` function needs to know how many frames exist to calculate the correct horizontal offset for each shader preview.
 
 ---
 
 ## Future Improvements
 
-Currently, the system requires manual updates to `NUM_SHADERS` and spritesheet frame counts. Potential improvements:
+Currently, the system requires manual updates to `NUM_SHADERS` constant. Potential improvements:
 
 1. **Automatic shader counting**: Remove `NUM_SHADERS` constant, use `shaders.len()` from runtime discovery
 2. **Individual thumbnail files**: One BMP per shader instead of spritesheet

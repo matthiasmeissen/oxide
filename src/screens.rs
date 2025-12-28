@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{coordinator::NUM_SHADERS, state::*};
 
 use embedded_graphics::{
     image::{Image, ImageDrawableExt},
@@ -94,7 +94,15 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.shader_index), 3, 128, 64, SHADER);
+    comp_spritesheet(
+        display, 
+        Point::new(0, 0), 
+        SpritesheetIndex::Index(state.shader_index), 
+        NUM_SHADERS as i32, 
+        128, 
+        64, 
+        SHADER
+    );
     comp_image(display, Point::new(34, 51), SELECT);
 }
 
@@ -103,7 +111,15 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(index), 3, 128, 64, SHADER);
+    comp_spritesheet(
+        display, 
+        Point::new(0, 0), 
+        SpritesheetIndex::Index(index), 
+        NUM_SHADERS as i32, 
+        128, 
+        64, 
+        SHADER
+    );
 }
 
 fn screen_audio<T>(display: &mut T, state: &State)

@@ -4,8 +4,8 @@ use std::thread;
 use crossbeam_channel::Receiver;
 use triple_buffer::*;
 
-const NUM_SHADERS: usize = 3;
-const NUM_DSP: usize = 3;
+pub const NUM_SHADERS: usize = 3;
+pub const NUM_DSP: usize = 3;
 
 struct Coordinator {
     app_state: State,
