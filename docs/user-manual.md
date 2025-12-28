@@ -173,9 +173,8 @@ Home <-> Shader <-> Audio
 
 ## Additional Resources
 
-- [Architecture Documentation](docs/architecture.md) - Technical system overview
-- [Adding Shaders Guide](docs/adding-shaders.md) - How to create custom shaders
-- Source code and issue tracker: [GitHub repository]
+- [Architecture Documentation](architecture.md) - Technical system overview
+- [Adding Shaders Guide](adding-shaders.md) - How to create custom shaders
 
 ## Version Information
 

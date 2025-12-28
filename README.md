@@ -12,7 +12,7 @@ cargo run --release
 
 ## Documentation
 
-- [User Manual](user-manual.md) - How to use Oxide
+- [User Manual](docs/user-manual.md) - How to use Oxide
 - [Architecture](docs/architecture.md) - System design and technical overview
 - [Adding Shaders](docs/adding-shaders.md) - Guide for creating custom shaders
 
