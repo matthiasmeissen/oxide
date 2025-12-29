@@ -118,6 +118,7 @@ DebouncedButton button1(BUTTON1_PIN);
 DebouncedButton button2(BUTTON2_PIN);
 DebouncedButton button3(BUTTON3_PIN);
 DebouncedButton button4(BUTTON4_PIN);
+DebouncedButton encButton(ENC1_SW_PIN);
 
 // ===== SMOOTHING CLASS =====
 class SmoothedAnalogInput {
@@ -213,6 +214,7 @@ void setup() {
   button2.begin();
   button3.begin();
   button4.begin();
+  encButton.begin();
   Serial.println("✓ Buttons initialized");
 
   // Initialize Potentiometer
@@ -258,6 +260,7 @@ void loop() {
   localState.button2 = button2.read();
   localState.button3 = button3.read();
   localState.button4 = button4.read();
+  localState.enc1_button = encButton.read(); 
 
   // Read Pots
   uint16_t stablePotValue1 = pot1.read();
@@ -278,7 +281,6 @@ void loop() {
   // Read Encoder
   long raw_encoder_steps = encoder1.readEncoder();
   localState.enc1_value = floor_div(raw_encoder_steps, 4);
-  localState.enc1_button = encoder1.isEncoderButtonDown();
 
   
   // Update global state atomically
@@ -287,24 +289,18 @@ void loop() {
   interrupts();
   
   // Optional: Print state for debugging (comment out in production)
-  static unsigned long lastPrint = 0;
-  if (millis() - lastPrint > 500) {
-    Serial.println("--------");
-    Serial.printf("BTN1:%d BTN2:%d BTN3:%d BTN4:%d \n",
-                  localState.button1,
-                  localState.button2,
-                  localState.button3,
-                  localState.button4);
-    Serial.printf("POT1: val=%d POT2: val=%d POT3: val=%d POT4: val=%d \n",
-                  localState.pot1_value,
-                  localState.pot2_value,
-                  localState.pot3_value,
-                  localState.pot4_value);
-    Serial.printf("ENC1: val=%d btn=%d \n",
-                  localState.enc1_value,
-                  localState.enc1_button);
-    lastPrint = millis();
-  }
+  // static unsigned long lastPrint = 0;
+  // if (millis() - lastPrint > 50) { // Faster print for plotting (50ms)
+  //   // Format: P1,P2,P3,P4,EncVal,EncBtn
+  //   Serial.printf("%d,%d,%d,%d,%d,%d \n",
+  //                 localState.pot1_value,
+  //                 localState.pot2_value,
+  //                 localState.pot3_value,
+  //                 localState.pot4_value,
+  //                 localState.enc1_value,
+  //                 localState.enc1_button * 100); // Multiply btn by 100 to see it on graph
+  //   lastPrint = millis();
+  // }
   
   delay(4); // 100Hz update rate
 }
