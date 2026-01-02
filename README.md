@@ -1,4 +1,4 @@
-# Oxide
+# AV Synth
 
 An audiovisual synthesizer built in rust. 
 
@@ -12,7 +12,7 @@ cargo run --release
 
 ## Documentation
 
-- [User Manual](docs/user-manual.md) - How to use Oxide
+- [User Manual](docs/user-manual.md) - How to use AV Synth
 - [Architecture](docs/architecture.md) - System design and technical overview
 - [Adding Shaders](docs/adding-shaders.md) - Guide for creating custom shaders
 - [Adding Audio Engines](docs/adding-audio-engines.md) - Guide for creating custom audio engines

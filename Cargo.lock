@@ -31,6 +31,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
+name = "av-synth"
+version = "0.1.0"
+dependencies = [
+ "cpal",
+ "crossbeam-channel",
+ "embedded-graphics",
+ "embedded-hal",
+ "linux-embedded-hal",
+ "midir",
+ "miniquad",
+ "sh1106",
+ "tinybmp",
+ "triple_buffer",
+]
+
+[[package]]
 name = "az"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -650,22 +666,6 @@ name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
-
-[[package]]
-name = "oxide"
-version = "0.1.0"
-dependencies = [
- "cpal",
- "crossbeam-channel",
- "embedded-graphics",
- "embedded-hal",
- "linux-embedded-hal",
- "midir",
- "miniquad",
- "sh1106",
- "tinybmp",
- "triple_buffer",
-]
 
 [[package]]
 name = "parking_lot"
