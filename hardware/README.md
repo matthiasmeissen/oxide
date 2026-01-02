@@ -1,6 +1,6 @@
-# Oxide Custom Hardware
+# AV Synth Custom Hardware
 
-Custom I2C control surface for Oxide audiovisual synthesizer on Raspberry Pi.
+Custom I2C control surface for AV Synth audiovisual synthesizer on Raspberry Pi.
 
 ## Overview
 

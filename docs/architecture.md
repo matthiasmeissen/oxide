@@ -1,4 +1,4 @@
-# Oxide - Architecture Overview
+# AV Synth - Architecture Overview
 
 ## Core Concept
 
@@ -73,7 +73,7 @@ Keyboard/Mouse─┘             (State Hub)   Buffers └─→ Display Thread
 ## Project Structure
 
 ```
-oxide/
+av-synth/
 ├── src/
 │   ├── main.rs                    # Entry point and thread orchestration
 │   ├── state.rs                   # Core data structures and message types

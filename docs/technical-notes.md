@@ -19,7 +19,7 @@ To flip images you can do:
 
 **Autostart Program on Raspberry Pi**
 
-- Make program executable: `chmod +x dev/oxide/target/release/oxide`
+- Make program executable: `chmod +x dev/av-synth/target/release/av-synth`
 - Create autostart folder in .config directory: `mkdir .config/autostart`
 - Create myscript.desktop file in autostart directory: `touch myscript.desktop`
 
@@ -27,5 +27,5 @@ To flip images you can do:
 [Desktop Entry]
 Type=Application
 Name=My Rust App
-Exec=bash -c "cd dev/oxide  && ./target/release/oxide"
+Exec=bash -c "cd dev/av-synth  && ./target/release/av-synth"
 ```

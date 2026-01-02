@@ -13,8 +13,8 @@ hardware/
 ```
 
 File Naming:
-- Include version numbers: oxide-control-v1.0-gerbers.zip
-- Use descriptive names: oxide-case-top.stl (not top.stl)
+- Include version numbers: av-synth-control-v1.0-gerbers.zip
+- Use descriptive names: av-synth-case-top.stl (not top.stl)
 - Archive gerbers as single ZIP file
 
 Essential Files:
@@ -42,7 +42,7 @@ The guide includes a complete directory structure example, file naming conventio
 
 ## Details
 
-This guide outlines the recommended structure for organizing custom hardware files in the Oxide repository, following open-source hardware best practices.
+This guide outlines the recommended structure for organizing custom hardware files in the av-synth repository, following open-source hardware best practices.
 
 ## Recommended Directory Structure
 
@@ -52,30 +52,30 @@ hardware/
 ├── LICENSE                        # Hardware license (e.g., CERN-OHL-S-2.0)
 ├── pcb/
 │   ├── design-files/             # Source files (KiCad, Eagle, Altium, etc.)
-│   │   ├── oxide-control.kicad_pcb
-│   │   ├── oxide-control.kicad_sch
-│   │   └── oxide-control.kicad_pro
+│   │   ├── av-synth-control.kicad_pcb
+│   │   ├── av-synth-control.kicad_sch
+│   │   └── av-synth-control.kicad_pro
 │   ├── gerbers/                  # Manufacturing files
-│   │   ├── oxide-control-v1.0-gerbers.zip
+│   │   ├── av-synth-control-v1.0-gerbers.zip
 │   │   └── README.md             # Gerber contents description
 │   ├── bom/
-│   │   ├── oxide-control-v1.0-bom.csv
-│   │   ├── oxide-control-v1.0-bom.xlsx
+│   │   ├── av-synth-control-v1.0-bom.csv
+│   │   ├── av-synth-control-v1.0-bom.xlsx
 │   │   └── README.md             # BOM notes and sourcing info
 │   └── assembly/
-│       ├── oxide-control-v1.0-cpl.csv    # Component placement list
+│       ├── av-synth-control-v1.0-cpl.csv    # Component placement list
 │       └── assembly-notes.pdf             # Assembly instructions
 ├── enclosure/
 │   ├── design-files/             # Source CAD files
-│   │   ├── oxide-case-top.step
-│   │   ├── oxide-case-bottom.step
-│   │   └── oxide-case.f3d        # Fusion 360 source
+│   │   ├── av-synth-case-top.step
+│   │   ├── av-synth-case-bottom.step
+│   │   └── av-synth-case.f3d        # Fusion 360 source
 │   ├── stl/                      # 3D printable files
-│   │   ├── oxide-case-top.stl
-│   │   └── oxide-case-bottom.stl
+│   │   ├── av-synth-case-top.stl
+│   │   └── av-synth-case-bottom.stl
 │   └── drawings/                 # 2D technical drawings
-│       ├── oxide-case-dimensions.pdf
-│       └── oxide-case-assembly.pdf
+│       ├── av-synth-case-dimensions.pdf
+│       └── av-synth-case-assembly.pdf
 ├── firmware/
 │   ├── esp32-control/
 │   │   ├── src/
@@ -101,9 +101,9 @@ hardware/
 ### Version Control
 
 Include version numbers in manufacturing files:
-- `oxide-control-v1.0-gerbers.zip`
-- `oxide-control-v1.0-bom.csv`
-- `oxide-case-v1.1-top.stl`
+- `av-synth-control-v1.0-gerbers.zip`
+- `av-synth-control-v1.0-bom.csv`
+- `av-synth-case-v1.1-top.stl`
 
 Use semantic versioning:
 - Major version: Incompatible design changes
@@ -113,8 +113,8 @@ Use semantic versioning:
 ### Descriptive Names
 
 Use clear, descriptive names:
-- `oxide-control-pcb` (not `board` or `pcb1`)
-- `oxide-case-top.stl` (not `top.stl`)
+- `av-synth-control-pcb` (not `board` or `pcb1`)
+- `av-synth-case-top.stl` (not `top.stl`)
 - `assembly-guide.md` (not `guide.md`)
 
 ### Layer Naming for Gerbers
@@ -141,7 +141,7 @@ When generating Gerbers, use standard layer names:
 - Edge cuts / board outline
 - Drill files (PTH and NPTH)
 
-Package as single ZIP archive: `oxide-control-v1.0-gerbers.zip`
+Package as single ZIP archive: `av-synth-control-v1.0-gerbers.zip`
 
 **Bill of Materials (Required)**
 - Component designators
@@ -203,9 +203,9 @@ Format: CSV
 Your `hardware/README.md` should include:
 
 ```markdown
-# Oxide Custom Hardware
+# av-synth Custom Hardware
 
-Custom I2C control surface for Oxide audiovisual synthesizer.
+Custom I2C control surface for av-synth audiovisual synthesizer.
 
 ## Overview
 

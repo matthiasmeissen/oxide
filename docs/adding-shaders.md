@@ -1,6 +1,6 @@
-# Adding New Shaders to Oxide
+# Adding New Shaders to AV Synth
 
-This guide walks through the complete process of adding a new shader to the Oxide audiovisual synthesizer.
+This guide walks through the complete process of adding a new shader to the AV Synth.
 
 ---
 

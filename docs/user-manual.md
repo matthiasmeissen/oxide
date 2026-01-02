@@ -1,6 +1,6 @@
-# Oxide User Manual
+# AV Synth User Manual
 
-Oxide is an audiovisual synthesizer that generates real-time graphics and sound driven by the same set of parameters. Control it using keyboard, mouse, MIDI controllers, or custom hardware on Raspberry Pi.
+Av Synth is an audiovisual synthesizer that generates real-time graphics and sound driven by the same set of parameters. Control it using keyboard, mouse, MIDI controllers, or custom hardware on Raspberry Pi.
 
 ## Quick Start
 
@@ -11,7 +11,7 @@ cargo run --release
 
 ## Control Parameters
 
-Oxide uses 8 shared parameters that simultaneously control both visuals and audio:
+Av Synth uses 8 shared parameters that simultaneously control both visuals and audio:
 
 - **CV 1-4**: Continuous values (0.0 to 1.0) - typically controlled by knobs or mouse position
 - **Gate 1-4**: Trigger values (0.0 or 1.0) - typically controlled by buttons or keys
@@ -42,7 +42,7 @@ Oxide uses 8 shared parameters that simultaneously control both visuals and audi
 
 ### MIDI Controllers
 
-Oxide automatically detects and configures supported MIDI devices. Connect your controller before starting the application.
+Av Synth automatically detects and configures supported MIDI devices. Connect your controller before starting the application.
 
 **Supported Devices**
 - Novation Launch Control XL
@@ -58,7 +58,7 @@ Device-specific CC and note numbers are pre-configured. Refer to the source code
 
 ### Custom Hardware (Raspberry Pi Only)
 
-When running on Raspberry Pi, Oxide supports custom I2C hardware:
+When running on Raspberry Pi, Av Synth supports custom I2C hardware:
 
 **Hardware Inputs**
 - 4 potentiometers - Control CV 1-4
@@ -178,4 +178,4 @@ Home <-> Shader <-> Audio
 
 ## Version Information
 
-This manual corresponds to the current version of Oxide. Parameter mappings, keyboard shortcuts, and available features are subject to change in future releases.
+This manual corresponds to the current version of Av Synth. Parameter mappings, keyboard shortcuts, and available features are subject to change in future releases.

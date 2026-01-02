@@ -1,6 +1,6 @@
 # Adding Audio Engines
 
-This guide walks through the complete process of adding a new audio engine (DSP) to Oxide.
+This guide walks through the complete process of adding a new audio engine (DSP) to the AV Synth.
 
 Audio engines are written in Faust and compiled to Rust using the Faust Web IDE.
 
@@ -32,7 +32,7 @@ Create your audio engine in Faust and save the source file.
 
 **Parameter Requirements**:
 - Your Faust code should expose exactly 8 parameters
-- Parameters are mapped to Oxide's unified control system
+- Parameters are mapped to AV Synth's unified control system
 - Use horizontal sliders for parameters
 
 **Example Faust Template**:
@@ -63,11 +63,11 @@ process = /* ... */;
    - **Architecture**: `jack`
 5. Download the exported `.rs` file
 
-**Why jack architecture?** The Faust IDE doesn't support `cpal` directly. We use `jack` architecture and manually modify the file to work with Oxide's `cpal`-based audio system.
+**Why jack architecture?** The Faust IDE doesn't support `cpal` directly. We use `jack` architecture and manually modify the file to work with AV Synth's `cpal`-based audio system.
 
 ### Step 3: Clean Up Exported Rust File
 
-The exported file needs significant modifications to integrate with Oxide.
+The exported file needs significant modifications to integrate with AV Synth.
 
 **Save exported file as**: `src/dsp/my_engine.rs`
 
@@ -293,7 +293,7 @@ The `[0]` syntax explicitly sets the ParamIndex, ensuring:
 - `v1` → ParamIndex(1) → controlled by `values[1]`
 - etc.
 
-This matches Oxide's parameter system where:
+This matches AV Synth's parameter system where:
 - Mouse X/Y and MIDI knobs control `values[0-3]` (CV)
 - Keyboard 1-4 keys and MIDI buttons control `values[4-7]` (Gates)
 

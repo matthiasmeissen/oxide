@@ -1,4 +1,4 @@
-# Oxide Project Plan
+# AV Synth Project Plan
 
 How to build an audiovisual synthesizer in rust.
 
