@@ -1,4 +1,4 @@
-use crate::{coordinator::NUM_SHADERS, state::*};
+use crate::{coordinator::{NUM_SHADERS, NUM_DSP}, state::*};
 
 use embedded_graphics::{
     image::{Image, ImageDrawableExt},
@@ -127,7 +127,15 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(state.dsp_type.get_index()), 3, 128, 64, AUDIO);
+    comp_spritesheet(
+        display, 
+        Point::new(0, 0), 
+        SpritesheetIndex::Index(state.dsp_type.get_index()), 
+        NUM_DSP as i32, 
+        128, 
+        64, 
+        AUDIO
+    );
     comp_image(display, Point::new(34, 51), SELECT);
 }
 
@@ -136,7 +144,15 @@ where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_spritesheet(display, Point::new(0, 0), SpritesheetIndex::Index(index), 3, 128, 64, AUDIO);
+    comp_spritesheet(
+        display, 
+        Point::new(0, 0), 
+        SpritesheetIndex::Index(index), 
+        NUM_DSP as i32, 
+        128, 
+        64, 
+        AUDIO
+    );
 }
 
 // -------- Components --------
