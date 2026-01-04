@@ -16,7 +16,7 @@ cargo run --release
 - [Architecture](docs/architecture.md) - System design and technical overview
 - [Adding Shaders](docs/adding-shaders.md) - Guide for creating custom shaders
 - [Adding Audio Engines](docs/adding-audio-engines.md) - Guide for creating custom audio engines
-- [Hardware](hardware/) - Custom I2C control surface for Raspberry Pi
+- [Hardware](hardware/) - Custom I2C control surface and enclosure for Raspberry Pi
 
 ## Features
 
