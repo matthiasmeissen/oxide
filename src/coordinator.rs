@@ -4,141 +4,240 @@ use std::thread;
 use crossbeam_channel::Receiver;
 use triple_buffer::*;
 
-const DEBUG: bool = false;
-const NUM_SHADERS: usize = 3;
-const NUM_SCREENS: usize = 2;
+pub const NUM_SHADERS: usize = 3;
+pub const NUM_DSP: usize = 3;
+
+struct Coordinator {
+    app_state: State,
+    ui_state: Screen,
+    midi_config: MidiConfig
+}
+
+impl Coordinator {
+    fn run (mut self,
+        receiver: Receiver<Message>,
+        mut window_writer: Input<State>,
+        mut graphics_display_writer: Input<DisplayState>,
+        mut oled_display_writer: Input<DisplayState>,
+        mut audio_writer: Input<State>,
+    ) {
+        let mut last_published_app_state = self.app_state;
+        let mut last_published_ui_state = self.ui_state;
+
+        while let Ok(msg) = receiver.recv() {
+            match msg {
+                Message::SetTime(t) => self.app_state.time = t,
+                Message::SetResolution(w, h) => self.app_state.resolution = [w, h],
+                Message::SetValue(i, v) => self.app_state.values[i] = v,
+                Message::SetShaderIndex(i) => self.app_state.shader_index = i,
+                Message::SetFps(fps) => self.app_state.fps = fps,
+                Message::SetDspType(dt) => self.app_state.dsp_type = dt,
+                Message::UiInput(event) => self.handle_ui_input(event),
+                Message::MidiInput(device, midi) => self.handle_midi_input(device, midi),
+            }
+
+            let app_state_change = self.app_state != last_published_app_state;
+            let ui_state_change = self.ui_state != last_published_ui_state;
+
+            if app_state_change || ui_state_change {
+                let display_payload = DisplayState {
+                    app: self.app_state,
+                    ui: self.ui_state,
+                };
+                graphics_display_writer.write(display_payload);
+                oled_display_writer.write(display_payload);
+                last_published_ui_state = self.ui_state
+            }
+
+            if app_state_change {
+                window_writer.write(self.app_state);
+                audio_writer.write(self.app_state);
+                last_published_app_state = self.app_state;
+            }
+        }
+    }
+
+    fn handle_ui_input(&mut self, event: InputEvent) {
+        let current_screen = self.ui_state;
+
+        let next_screen = match current_screen {
+            Screen::Home => match event {
+                InputEvent::Next => Screen::Shader,
+                InputEvent::Prev => Screen::Audio,
+                InputEvent::Enter => Screen::HomeSettings {selected_index: 0},
+            }
+            Screen::HomeSettings { mut selected_index} => match event {
+                InputEvent::Next => {println!("Next"); Screen::Home},
+                InputEvent::Prev => {println!("Prev"); Screen::Home},
+                InputEvent::Enter => Screen::Home,
+            }
+            Screen::Shader => match event {
+                InputEvent::Next => Screen::Audio,
+                InputEvent::Prev => Screen::Home,
+                InputEvent::Enter => Screen::ShaderSelect {selected_index: self.app_state.shader_index},
+            }
+            Screen::ShaderSelect { mut selected_index} => match event {
+                InputEvent::Next => {
+                    selected_index = (selected_index + 1) % NUM_SHADERS;
+                    Screen::ShaderSelect { selected_index }
+                },
+                InputEvent::Prev => {
+                    selected_index = (selected_index + NUM_SHADERS - 1) % NUM_SHADERS;
+                    Screen::ShaderSelect { selected_index }
+                },
+                InputEvent::Enter => {
+                    self.app_state.shader_index = selected_index;
+                    Screen::Home
+                },
+            }
+            Screen::Audio => match event {
+                InputEvent::Next => Screen::Home,
+                InputEvent::Prev => Screen::Shader,
+                InputEvent::Enter => {
+                    let current_dsp_index = match self.app_state.dsp_type {
+                        DspType::SimpleSine => 0,
+                        DspType::BasicFm => 1,
+                        DspType::DrumEngine => 2,
+                    };
+                    Screen::AudioSelect { selected_index: current_dsp_index }
+                },
+            }
+            Screen::AudioSelect { mut selected_index} => match event {
+                InputEvent::Next => {
+                    selected_index = (selected_index + 1) % NUM_DSP;
+                    Screen::AudioSelect { selected_index }
+                },
+                InputEvent::Prev => {
+                    selected_index = (selected_index + NUM_DSP - 1) % NUM_DSP;
+                    Screen::AudioSelect { selected_index }
+                },
+                InputEvent::Enter => {
+                    self.app_state.dsp_type = match selected_index {
+                        0 => DspType::SimpleSine,
+                        1 => DspType::BasicFm,
+                        2 => DspType::DrumEngine,
+                        _ => self.app_state.dsp_type,
+                    };
+                    Screen::Home
+                },
+            }
+        };
+
+        self.ui_state= next_screen;
+    }
+
+    fn handle_midi_input(&mut self, device: MidiDevice, midi: MidiMessage) {
+        let mapping = match device {
+            MidiDevice::LaunchControlXL => &self.midi_config.launch_control_xl,
+            MidiDevice::OPZ => &self.midi_config.opz,
+            MidiDevice::Deluge => &self.midi_config.deluge,
+            MidiDevice::Undefined => return,
+        };
+
+        match midi {
+            MidiMessage::ControlChange { controller, value } => {
+                if Some(controller) == mapping.v0_cv { self.app_state.values[0] = normalize_midi(value); }
+                else if Some(controller) == mapping.v1_cv { self.app_state.values[1] = normalize_midi(value); }
+                else if Some(controller) == mapping.v2_cv { self.app_state.values[2] = normalize_midi(value); }
+                else if Some(controller) == mapping.v3_cv { self.app_state.values[3] = normalize_midi(value); }
+
+                else if Some(controller) == mapping.prev_ui && value == 127 { self.handle_ui_input(InputEvent::Prev); }
+                else if Some(controller) == mapping.next_ui && value == 127 { self.handle_ui_input(InputEvent::Next); }
+                //println!("{:?}", self.app_state);
+            }
+            MidiMessage::NoteOn { note, .. } => {
+                if Some(note) == mapping.v4_gate { self.app_state.values[4] = 1.0; }
+                else if Some(note) == mapping.v5_gate { self.app_state.values[5] = 1.0; }
+                else if Some(note) == mapping.v6_gate { self.app_state.values[6] = 1.0; }
+                else if Some(note) == mapping.v7_gate { self.app_state.values[7] = 1.0; }
+                else if Some(note) == mapping.enter_ui { self.handle_ui_input(InputEvent::Enter); }
+            }
+            MidiMessage::NoteOff { note } => {
+                if Some(note) == mapping.v4_gate { self.app_state.values[4] = 0.0; }
+                else if Some(note) == mapping.v5_gate { self.app_state.values[5] = 0.0; }
+                else if Some(note) == mapping.v6_gate { self.app_state.values[6] = 0.0; }
+                else if Some(note) == mapping.v7_gate { self.app_state.values[7] = 0.0; }
+            }
+        }
+    }
+}
 
 pub fn start_coordinator_thread(
     receiver: Receiver<Message>,
-    mut window_writer: Input<State>,
-    mut display_writer: Input<State>,
-    mut audio_writer: Input<State>,
+    window_writer: Input<State>,
+    graphics_display_writer: Input<DisplayState>,
+    oled_display_writer: Input<DisplayState>,
+    audio_writer: Input<State>,
 ) {
     thread::spawn(move || {
-        let mut current_state = State::default();
-        let mut last_published_state = current_state;
+        let coordinator = Coordinator {
+            app_state: State::default(),
+            ui_state: Screen::default(),
+            midi_config: MidiConfig::new(),
+        };
 
-        while let Ok(update) = receiver.recv() {
-            match update {
-                Message::SetTime(t) => current_state.time = t,
-                Message::SetResolution(w, h) => {
-                    //println!("{:?}", current_state);
-                    current_state.resolution = [w, h]
-                },
-                Message::SetValue(i, v) => {
-                    //println!("{:?}", current_state);
-                    current_state.values[i] = v
-                },
-                Message::SetShaderIndex(i) => {
-                    current_state.shader_index = i
-                }
-                Message::SetFps(fps) => {
-                    current_state.fps = fps;
-                }
-                Message::SetScreenIndex(i) => {
-                    current_state.shader_index = i % NUM_SHADERS;
-                }
-                Message::IncrementScreenIndex => {
-                    current_state.screen_index = (current_state.screen_index + 1) % NUM_SCREENS;
-                }
-                Message::SetDspType(dt) => {
-                    current_state.dsp_type = dt;
-                    println!("Dt is now: {:?}", dt);
-                }
-                Message::MidiInput(device, midi) => match midi {
-                    MidiMessage::ControlChange { controller, value } => {
-                        match device {
-                            MidiDevice::LaunchControlXL => {
-                                // From Novation
-                                if controller == 77 { current_state.values[0] = normalize_midi(value); }
-                                if controller == 78 { current_state.values[1] = normalize_midi(value); }
-                                if controller == 79 { current_state.values[2] = normalize_midi(value); }
-                                if controller == 80 { current_state.values[3] = normalize_midi(value); }
-                            },
-                            MidiDevice::OPZ => {
-                                // From OP-Z
-                                if controller == 1 { current_state.values[0] = normalize_midi(value); }
-                                if controller == 2 { current_state.values[1] = normalize_midi(value); }
-                                if controller == 3 { current_state.values[2] = normalize_midi(value); }
-                                if controller == 4 { current_state.values[3] = normalize_midi(value); }
-                            }
-                            MidiDevice::Deluge => {
-                                if controller == 0 { current_state.values[0] = normalize_midi(value); }
-                                if controller == 1 { current_state.values[1] = normalize_midi(value); }
-                                if controller == 2 { current_state.values[2] = normalize_midi(value); }
-                                if controller == 3 { current_state.values[3] = normalize_midi(value); }
-                            }
-                            _ => ()
-                        }
-                        //println!("{:?}", current_state);
-                    }
-                    MidiMessage::NoteOn { note, .. } => {
-                        match device {
-                            MidiDevice::LaunchControlXL => {
-                                // From Novation
-                                if note == 73 { current_state.values[4] = 1.0 }
-                                if note == 74 { current_state.values[5] = 1.0 }
-                                if note == 75 { current_state.values[6] = 1.0 }
-                                if note == 76 { current_state.values[7] = 1.0 }
-        
-                                if note == 41 { current_state.shader_index = 0 }
-                                if note == 42 { current_state.shader_index = 1 }
-        
-                                if note == 59 { current_state.screen_index = 0 }
-                                if note == 60 { current_state.screen_index = 1 }
-                            },
-                            MidiDevice::OPZ => {
-                                // From OP-Z
-                                if note == 53 { current_state.values[4] = 1.0 }
-                                if note == 54 { current_state.shader_index += 1 }
-                            },
-                            MidiDevice::Deluge => {
-                                if note == 60 { current_state.values[4] = 1.0 }
-                                if note == 62 { current_state.values[5] = 1.0 }
-                                if note == 64 { current_state.values[6] = 1.0 }
-                                if note == 65 { current_state.values[7] = 1.0 }
-                            }
-                            _ => ()
-                        }
-
-                    }
-                    MidiMessage::NoteOff { note } => {
-                        match device {
-                            MidiDevice::LaunchControlXL => {
-                                // From Novation
-                                if note == 73 { current_state.values[4] = 0.0 }
-                                if note == 74 { current_state.values[5] = 0.0 }
-                                if note == 75 { current_state.values[6] = 0.0 }
-                                if note == 76 { current_state.values[7] = 0.0 }
-                            },
-                            MidiDevice::OPZ => {
-                                // From OP-Z
-                                if note == 53 { current_state.values[4] = 0.0 }
-                            },
-                            MidiDevice::Deluge => {
-                                if note == 60 { current_state.values[4] = 0.0 }
-                                if note == 62 { current_state.values[5] = 0.0 }
-                                if note == 64 { current_state.values[6] = 0.0 }
-                                if note == 65 { current_state.values[7] = 0.0 }
-                            }
-                            _ => ()
-                        }
-
-                    }
-                },
-            }
-
-            if current_state != last_published_state {
-                window_writer.write(current_state);
-                display_writer.write(current_state);
-                audio_writer.write(current_state);
-                last_published_state = current_state;
-                if DEBUG {println!("// -> Cooridnator published new state. {:#?}", current_state)} else {};
-            }
-        }
+        coordinator.run(receiver, window_writer, graphics_display_writer, oled_display_writer, audio_writer);
     });
 }
 
 fn normalize_midi(value: u8) -> f32 {
     value as f32 / 128.0
+}
+
+struct MidiConfig {
+    launch_control_xl: MidiDeviceMapping,
+    opz: MidiDeviceMapping,
+    deluge: MidiDeviceMapping,
+}
+
+impl MidiConfig {
+    fn new() -> Self {
+        Self { 
+            launch_control_xl: MidiDeviceMapping {
+                v0_cv: Some(77),
+                v1_cv: Some(78),
+                v2_cv: Some(79),
+                v3_cv: Some(80),
+                
+                v4_gate: Some(73),
+                v5_gate: Some(74),
+                v6_gate: Some(75),
+                v7_gate: Some(76),
+
+                prev_ui: Some(106),
+                next_ui: Some(107),
+                enter_ui: Some(105),
+            }, 
+            opz: MidiDeviceMapping {
+                v0_cv: Some(1),
+                v1_cv: Some(2),
+                v2_cv: Some(3),
+                v3_cv: Some(4),
+                
+                v4_gate: Some(53),
+                v5_gate: Some(54),
+                v6_gate: Some(55),
+                v7_gate: Some(56),
+
+                prev_ui: None,
+                next_ui: None,
+                enter_ui: None,
+            }, 
+            deluge: MidiDeviceMapping {
+                v0_cv: Some(0),
+                v1_cv: Some(1),
+                v2_cv: Some(2),
+                v3_cv: Some(3),
+                
+                v4_gate: Some(60),
+                v5_gate: Some(62),
+                v6_gate: Some(64),
+                v7_gate: Some(65),
+
+                prev_ui: None,
+                next_ui: None,
+                enter_ui: None,
+            }, 
+        }
+    }
 }
