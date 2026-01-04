@@ -29,6 +29,9 @@ Custom I2C control surface for AV Synth audiovisual synthesizer on Raspberry Pi.
 - `firmware/esp_inputs/` - ESP32 Arduino sketch for I2C control
 - `firmware/standalone_device/` - Standalone version with display
 
+### Enclosure
+- `enclosure/stl/` - STL files of enclosure for 3D printing
+
 ## Specifications
 
 **PCB**
