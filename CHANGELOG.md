@@ -8,7 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Folder-driven shaders: any `.glsl` in `assets/shaders/` is discovered at startup, with an optional sibling `<name>.bmp` preview (a bundled default is shown when none is provided). No recompile needed to add a shader.
-- New shader: `mmn-gl-149-blending-shapes-260621`.
+- New shader: `mmn-gl-149-260621` (SDF blending-shapes pattern).
 - Shader template: `shader-template.glsl` as minimal starting point with all uniforms declared.
 
 ### Changed
