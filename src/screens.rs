@@ -17,16 +17,16 @@ use std::fmt::Debug;
 // To convert the bmp file
 // Run: ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp
 
-const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002.bmp");
-const TOP: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002-top.bmp");
-const TRIGGER: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002-trigger.bmp");
-const RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002-range-1.bmp");
-const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002-range-2.bmp");
-const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002-range-3.bmp");
-const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-002-range-4.bmp");
+const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view.bmp");
+const TOP: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-top.bmp");
+const TRIGGER: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-trigger.bmp");
+const RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-1.bmp");
+const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-2.bmp");
+const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-3.bmp");
+const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-4.bmp");
 
-const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-view/shader-001-select.bmp");
-const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-view/audio-001.bmp");
+const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-view/shader-view-select.bmp");
+const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-view/audio-view.bmp");
 
 
 const CHARACTERSTYLE: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
