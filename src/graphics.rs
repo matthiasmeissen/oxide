@@ -1,7 +1,9 @@
 use crate::state::*;
 use crate::screens::draw;
+use crate::shaders::ShaderLibrary;
 
 use miniquad::*;
+use std::sync::Arc;
 use std::{fs, time::Instant};
 use crossbeam_channel::Sender;
 use triple_buffer::Output;
@@ -40,9 +42,10 @@ const OLED_FRAGMENT_SHADER: &str = r#"
 "#;
 
 pub fn start_graphics_thread(
-    window_sender: Sender<Message>, 
+    window_sender: Sender<Message>,
     window_reader: Output<State>,
-    display_reader: Output<DisplayState>
+    display_reader: Output<DisplayState>,
+    shaders: Arc<ShaderLibrary>,
 ) {
     let conf = conf::Conf {
         window_title: String::from("Window Title"),
@@ -53,7 +56,7 @@ pub fn start_graphics_thread(
         ..Default::default()
     };
 
-    start(conf, || Box::new(Stage::new(window_sender, window_reader, display_reader)));
+    start(conf, move || Box::new(Stage::new(window_sender, window_reader, display_reader, shaders)));
 }
 
 struct DisplayBuffer {
@@ -162,7 +165,7 @@ struct Stage {
 
     mq_resolution: [f32; 2],
     is_fullscreen: bool,
-    shader_paths: Vec<String>,
+    shaders: Arc<ShaderLibrary>,
     current_shader_index: usize,
     last_fps_update: Instant,
     frames_since_update: u32,
@@ -171,7 +174,7 @@ struct Stage {
 }
 
 impl Stage {
-    fn new(sender: Sender<Message>, reader: Output<State>, mut display_reader: Output<DisplayState>) -> Self {
+    fn new(sender: Sender<Message>, reader: Output<State>, mut display_reader: Output<DisplayState>, shaders: Arc<ShaderLibrary>) -> Self {
         let mut ctx = window::new_rendering_backend();
 
         // =======================================================================
@@ -198,7 +201,7 @@ impl Stage {
         let display_state = display_reader.read();
         display_buffer.clear();
 
-        draw(&mut display_buffer, &display_state);
+        draw(&mut display_buffer, &display_state, &shaders);
         let initial_rgba = display_buffer.to_rgba();
         let display_texture = ctx.new_texture_from_rgba8(128, 64, initial_rgba);
         ctx.texture_set_filter(display_texture, FilterMode::Nearest, MipmapFilterMode::None);
@@ -206,15 +209,12 @@ impl Stage {
         // =======================================================================
         // 3. SETUP MAIN PIPELINE
         // =======================================================================
-        let shader_paths = load_shaders_from_dir(std::path::Path::new("assets/shaders"))
-            .expect("Failed to load shaders from 'assets/shaders' directory.");
-
-        if shader_paths.is_empty() {
-            panic!("No visualizer shaders found in 'assets/shaders'.");
-        }
-
         let current_shader_index = 0;
-        let initial_shader_source = std::fs::read_to_string(&shader_paths[current_shader_index])
+        let initial_shader_path = shaders
+            .path(current_shader_index)
+            .expect("Shader library is empty")
+            .to_path_buf();
+        let initial_shader_source = std::fs::read_to_string(&initial_shader_path)
             .expect("Error reading the initial shader");
 
         let main_shader = ctx.new_shader(
@@ -290,7 +290,7 @@ impl Stage {
             display_texture,
             mq_resolution: [width, height],
             is_fullscreen: true,
-            shader_paths,
+            shaders,
             current_shader_index,
             last_fps_update: Instant::now(),
             frames_since_update: 0,
@@ -304,22 +304,34 @@ impl Stage {
         let display_state = self.display_reader.read();
         
         self.display_buffer.clear();
-        draw(&mut self.display_buffer, &display_state);
-        
+        draw(&mut self.display_buffer, &display_state, &self.shaders);
+
         let rgba_data = self.display_buffer.to_rgba();
         self.ctx.texture_update(self.display_texture, rgba_data);
     }
 
     fn set_shader(&mut self, new_index: usize) {
-        let wrapped_index = new_index % self.shader_paths.len();
+        let num_shaders = self.shaders.len();
+        if num_shaders == 0 {
+            return;
+        }
+
+        let wrapped_index = new_index % num_shaders;
         if wrapped_index == self.current_shader_index {
             return;
         }
 
+        // Acknowledge the request up front so a failed compile does not make
+        // `update()` retry the same broken shader every frame. On failure the
+        // previous pipeline is kept, so the last working visual stays on screen.
         self.current_shader_index = wrapped_index;
-        let new_shader_path = &self.shader_paths[self.current_shader_index];
 
-        match fs::read_to_string(new_shader_path) {
+        let new_shader_path = match self.shaders.path(wrapped_index) {
+            Some(path) => path.to_path_buf(),
+            None => return,
+        };
+
+        match fs::read_to_string(&new_shader_path) {
             Ok(fragment_source) => {
                 match self.ctx.new_shader(
                     ShaderSource::Glsl { vertex: VERTEX, fragment: &fragment_source },
@@ -337,15 +349,15 @@ impl Stage {
                         );
 
                         self.main_pipeline = new_pipeline;
-                        println!("Successfully swapped to shader: {}", new_shader_path);
+                        println!("Successfully swapped to shader: {}", new_shader_path.display());
                     }
                     Err(err) => {
-                        eprintln!("Failed to compile shader '{}': {:?}", new_shader_path, err);
+                        eprintln!("Failed to compile shader '{}': {:?}", new_shader_path.display(), err);
                     }
                 }
             }
             Err(err) => {
-                eprintln!("Failed to load shader file '{}': {}", new_shader_path, err);
+                eprintln!("Failed to load shader file '{}': {}", new_shader_path.display(), err);
             }
         }
     }
@@ -470,7 +482,7 @@ impl EventHandler for Stage {
                 println!("OLED Preview: {}", if self.show_oled_preview { "ON" } else { "OFF" });
             },
             KeyCode::Up => {
-                let num_shaders = self.shader_paths.len();
+                let num_shaders = self.shaders.len();
                 if num_shaders > 0 {
                     let next_index = (self.current_shader_index + 1) % num_shaders;
                     self.sender.try_send(Message::SetShaderIndex(next_index)).ok();
@@ -548,22 +560,4 @@ fn oled_shader_meta() -> ShaderMeta {
         uniforms: UniformBlockLayout { uniforms: vec![] },
         images: vec!["u_oled_texture".to_string()],
     }
-}
-
-fn load_shaders_from_dir(dir_path: &std::path::Path) -> std::io::Result<Vec<String>> {
-    let mut shader_paths = vec![];
-
-    for entry in std::fs::read_dir(dir_path)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_file() {
-            if let Some(path_str) = path.to_str() {
-                shader_paths.push(path_str.to_string());
-            }
-        }
-    };
-
-    shader_paths.sort();
-    Ok(shader_paths)
 }

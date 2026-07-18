@@ -1,16 +1,18 @@
 use crate::state::*;
+use crate::shaders::ShaderLibrary;
 
+use std::sync::Arc;
 use std::thread;
 use crossbeam_channel::Receiver;
 use triple_buffer::*;
 
-pub const NUM_SHADERS: usize = 3;
 pub const NUM_DSP: usize = 3;
 
 struct Coordinator {
     app_state: State,
     ui_state: Screen,
-    midi_config: MidiConfig
+    midi_config: MidiConfig,
+    shaders: Arc<ShaderLibrary>,
 }
 
 impl Coordinator {
@@ -78,11 +80,13 @@ impl Coordinator {
             }
             Screen::ShaderSelect { mut selected_index} => match event {
                 InputEvent::Next => {
-                    selected_index = (selected_index + 1) % NUM_SHADERS;
+                    let num_shaders = self.shaders.len().max(1);
+                    selected_index = (selected_index + 1) % num_shaders;
                     Screen::ShaderSelect { selected_index }
                 },
                 InputEvent::Prev => {
-                    selected_index = (selected_index + NUM_SHADERS - 1) % NUM_SHADERS;
+                    let num_shaders = self.shaders.len().max(1);
+                    selected_index = (selected_index + num_shaders - 1) % num_shaders;
                     Screen::ShaderSelect { selected_index }
                 },
                 InputEvent::Enter => {
@@ -168,12 +172,14 @@ pub fn start_coordinator_thread(
     graphics_display_writer: Input<DisplayState>,
     oled_display_writer: Input<DisplayState>,
     audio_writer: Input<State>,
+    shaders: Arc<ShaderLibrary>,
 ) {
     thread::spawn(move || {
         let coordinator = Coordinator {
             app_state: State::default(),
             ui_state: Screen::default(),
             midi_config: MidiConfig::new(),
+            shaders,
         };
 
         coordinator.run(receiver, window_writer, graphics_display_writer, oled_display_writer, audio_writer);

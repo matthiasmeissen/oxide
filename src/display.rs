@@ -1,16 +1,18 @@
 #![cfg(target_os = "linux")]
 
 use crate::{state::*, screens::*};
+use crate::shaders::ShaderLibrary;
 
 use sh1106::{prelude::*, Builder};
 use linux_embedded_hal::I2cdev;
 
 use triple_buffer::*;
 
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-pub fn start_display(mut display_reader: Output<DisplayState>) {
+pub fn start_display(mut display_reader: Output<DisplayState>, shaders: Arc<ShaderLibrary>) {
     thread::spawn(move || {
         let mut i2c = I2cdev::new("/dev/i2c-1").unwrap();
         i2c.set_slave_address(0x3C).unwrap();
@@ -25,7 +27,7 @@ pub fn start_display(mut display_reader: Output<DisplayState>) {
     
             display.clear();
     
-            draw(&mut display, &state);
+            draw(&mut display, &state, &shaders);
         
             display.flush().unwrap();
     
