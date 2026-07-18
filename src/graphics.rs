@@ -48,7 +48,7 @@ pub fn start_graphics_thread(
     shaders: Arc<ShaderLibrary>,
 ) {
     let conf = conf::Conf {
-        window_title: String::from("Window Title"),
+        window_title: String::from("AV Synth"),
         high_dpi: true,
         window_width: 960,
         window_height: 540,
@@ -153,6 +153,7 @@ struct Stage {
 
     oled_pipeline: Pipeline,
     oled_bindings: Bindings,
+    oled_vertex_buffer: BufferId,
 
     ctx: Box<dyn RenderingBackend>,
     start_time: std::time::Instant,
@@ -238,14 +239,11 @@ impl Stage {
         // =======================================================================
         // 4. SETUP OLED PIPELINE
         // =======================================================================
-        let oled_vertices: [Vertex; 4] = [
-            Vertex { pos: [0.35, -0.95],      uv: [0.0, 0.0] }, // Bottom-left
-            Vertex { pos: [0.95, -0.95],      uv: [1.0, 0.0] }, // Bottom-right
-            Vertex { pos: [0.95, -0.4166667], uv: [1.0, 1.0] }, // Top-right
-            Vertex { pos: [0.35, -0.4166667], uv: [0.0, 1.0] }, // Top-left
-        ];
+        let (init_w, init_h) = window::screen_size();
+        let oled_verts = oled_vertices(init_w / init_h);
+        // Stream so the quad can be recomputed on resize to preserve the 2:1 aspect.
         let oled_vertex_buffer = ctx.new_buffer(
-            BufferType::VertexBuffer, BufferUsage::Immutable, BufferSource::slice(&oled_vertices)
+            BufferType::VertexBuffer, BufferUsage::Stream, BufferSource::slice(&oled_verts)
         );
         let oled_index_buffer = ctx.new_buffer( // Can reuse the same index data
             BufferType::IndexBuffer, BufferUsage::Immutable, BufferSource::slice(&indices)
@@ -280,6 +278,7 @@ impl Stage {
 
             oled_pipeline,
             oled_bindings,
+            oled_vertex_buffer,
 
             ctx,
             start_time: Instant::now(),
@@ -436,6 +435,9 @@ impl EventHandler for Stage {
 
     fn resize_event(&mut self, width: f32, height: f32) {
         self.mq_resolution = [width, height];
+        // Recompute the OLED preview quad so it stays 2:1 at the new aspect ratio.
+        let verts = oled_vertices(width / height);
+        self.ctx.buffer_update(self.oled_vertex_buffer, BufferSource::slice(&verts));
         self.sender.try_send(Message::SetResolution(width, height)).ok();
         println!("Set resolution to: {width}, {height}");
     }
@@ -519,6 +521,30 @@ impl EventHandler for Stage {
 struct Vertex {
     pos: [f32; 2],
     uv: [f32; 2],
+}
+
+// OLED preview quad, anchored to the bottom-right corner in NDC.
+const OLED_ANCHOR_RIGHT: f32 = 0.95;
+const OLED_ANCHOR_BOTTOM: f32 = -0.95;
+const OLED_NDC_WIDTH: f32 = 0.60;
+
+// Build the OLED preview quad for a given window aspect ratio (width / height).
+// The source texture is 128x64 (2:1); to keep it undistorted the on-screen rect
+// must also be 2:1 in *pixels*. NDC spans 2 units on both axes but maps to
+// different pixel counts, so the NDC height is derived from the aspect ratio.
+fn oled_vertices(aspect: f32) -> [Vertex; 4] {
+    let right = OLED_ANCHOR_RIGHT;
+    let left = right - OLED_NDC_WIDTH;
+    let bottom = OLED_ANCHOR_BOTTOM;
+    // pixel_height = pixel_width / 2  =>  ndc_height = ndc_width/2 * (W/H)
+    let ndc_height = OLED_NDC_WIDTH * 0.5 * aspect;
+    let top = bottom + ndc_height;
+    [
+        Vertex { pos: [left, bottom],  uv: [0.0, 0.0] }, // Bottom-left
+        Vertex { pos: [right, bottom], uv: [1.0, 0.0] }, // Bottom-right
+        Vertex { pos: [right, top],    uv: [1.0, 1.0] }, // Top-right
+        Vertex { pos: [left, top],     uv: [0.0, 1.0] }, // Top-left
+    ]
 }
 
 #[repr(C)]
