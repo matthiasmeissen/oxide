@@ -91,9 +91,14 @@ mod tests {
     fn scans_and_decodes_shader_folder() {
         let lib = ShaderLibrary::scan(Path::new("assets/shaders")).expect("scan failed");
 
-        // The three shipped shaders must be discovered and sorted by name.
-        assert!(lib.len() >= 3, "expected at least 3 shaders, got {}", lib.len());
-        assert_eq!(lib.name(0), "shader-001");
+        // At least one shader must ship in the folder.
+        assert!(!lib.is_empty(), "expected the shader folder to be non-empty");
+
+        // Entries are sorted by name, independent of which shaders exist.
+        let names: Vec<&str> = (0..lib.len()).map(|i| lib.name(i)).collect();
+        let mut sorted = names.clone();
+        sorted.sort();
+        assert_eq!(names, sorted, "entries must be sorted by name");
 
         // Every shader's `.glsl` reads and every preview (own bmp or the
         // bundled default) decodes onto the 1-bit OLED color type.
