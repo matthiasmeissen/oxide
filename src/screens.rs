@@ -1,4 +1,5 @@
-use crate::{coordinator::{NUM_SHADERS, NUM_DSP}, state::*};
+use crate::{coordinator::NUM_DSP, state::*};
+use crate::shaders::ShaderLibrary;
 
 use embedded_graphics::{
     image::{Image, ImageDrawableExt},
@@ -16,24 +17,23 @@ use std::fmt::Debug;
 // To convert the bmp file
 // Run: ffmpeg -i source.bmp -pix_fmt bgr24 target.bmp
 
-const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002.bmp");
-const TOP: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-top.bmp");
-const TRIGGER: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-trigger.bmp");
-const RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-1.bmp");
-const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-2.bmp");
-const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-3.bmp");
-const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-002/home-002-range-4.bmp");
+const HOME002: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view.bmp");
+const TOP: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-top.bmp");
+const TRIGGER: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-trigger.bmp");
+const RANGE1: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-1.bmp");
+const RANGE2: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-2.bmp");
+const RANGE3: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-3.bmp");
+const RANGE4: &'static [u8] = include_bytes!("../assets/bitmaps/home-view/home-view-range-4.bmp");
 
-const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001-select.bmp");
-const SHADER: &'static [u8] = include_bytes!("../assets/bitmaps/shader-001/shader-001.bmp");
-const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-001/audio-001.bmp");
+const SELECT: &'static [u8] = include_bytes!("../assets/bitmaps/shader-view/shader-view-select.bmp");
+const AUDIO: &'static [u8] = include_bytes!("../assets/bitmaps/audio-view/audio-view.bmp");
 
 
 const CHARACTERSTYLE: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::On);
 const CHARACTERSTYLEDARK: MonoTextStyle<'_, BinaryColor> = MonoTextStyle::new(&FONT_4X6, BinaryColor::Off);
 const TEXTSTYLE: TextStyle = TextStyleBuilder::new().baseline(embedded_graphics::text::Baseline::Top).alignment(embedded_graphics::text::Alignment::Left).build();
 
-pub fn draw<T>(display: &mut T, state: &DisplayState)
+pub fn draw<T>(display: &mut T, state: &DisplayState, shaders: &ShaderLibrary)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -41,8 +41,8 @@ where
     match state.ui {
         Screen::Home => screen_home(display, &state.app),
         Screen::HomeSettings {selected_index} => screen_home_settings(display, &state.app, selected_index),
-        Screen::Shader => screen_shader(display, &state.app),
-        Screen::ShaderSelect {selected_index} => screen_shader_select(display, &state.app, selected_index),
+        Screen::Shader => screen_shader(display, &state.app, shaders),
+        Screen::ShaderSelect {selected_index} => screen_shader_select(display, selected_index, shaders),
         Screen::Audio => screen_audio(display, &state.app),
         Screen::AudioSelect {selected_index} => screen_audio_select(display, &state.app, selected_index),
     }
@@ -89,37 +89,21 @@ where
     comp_image(display, Point::new(0, 0), HOME002);
 }
 
-fn screen_shader<T>(display: &mut T, state: &State)
+fn screen_shader<T>(display: &mut T, state: &State, shaders: &ShaderLibrary)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_spritesheet(
-        display, 
-        Point::new(0, 0), 
-        SpritesheetIndex::Index(state.shader_index), 
-        NUM_SHADERS as i32, 
-        128, 
-        64, 
-        SHADER
-    );
+    comp_image(display, Point::new(0, 0), shaders.preview(state.shader_index));
     comp_image(display, Point::new(34, 51), SELECT);
 }
 
-fn screen_shader_select<T>(display: &mut T, state: &State, index: usize)
+fn screen_shader_select<T>(display: &mut T, index: usize, shaders: &ShaderLibrary)
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
 {
-    comp_spritesheet(
-        display, 
-        Point::new(0, 0), 
-        SpritesheetIndex::Index(index), 
-        NUM_SHADERS as i32, 
-        128, 
-        64, 
-        SHADER
-    );
+    comp_image(display, Point::new(0, 0), shaders.preview(index));
 }
 
 fn screen_audio<T>(display: &mut T, state: &State)
@@ -189,7 +173,7 @@ enum SpritesheetIndex {
     Index(usize)
 }
 
-fn comp_spritesheet<T>(display: &mut T, position: Point, val: SpritesheetIndex, items: i32, width: i32, height: i32, bytes: &'static [u8])
+fn comp_spritesheet<T>(display: &mut T, position: Point, val: SpritesheetIndex, items: i32, width: i32, height: i32, bytes: &[u8])
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,
@@ -212,7 +196,7 @@ where
     Image::new(&image, position).draw(display).unwrap();
 }
 
-fn comp_image<T>(display: &mut T, position: Point, bytes: &'static [u8])
+fn comp_image<T>(display: &mut T, position: Point, bytes: &[u8])
 where
     T: DrawTarget<Color = BinaryColor>,
     T::Error: Debug,

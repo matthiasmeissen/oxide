@@ -244,7 +244,7 @@ Implemented this part, so not element of guideline.
 Similar to shaders, audio engines use a spritesheet for UI previews.
 
 **Current System**:
-- File: `assets/bitmaps/audio-001/audio-001.bmp`
+- File: `assets/bitmaps/audio-view/audio-view.bmp`
 - Current dimensions: 384 × 64 pixels (3 engines)
 - Structure: Horizontal spritesheet (3 × 128×64)
 
@@ -253,7 +253,7 @@ Similar to shaders, audio engines use a spritesheet for UI previews.
 2. Create preview image for your engine (128×64)
 3. Arrange horizontally: SimpleSine | BasicFm | DrumEngine | MyEngine
 4. Export as BMP, 24-bit BGR format
-5. Convert: `ffmpeg -i source.bmp -pix_fmt bgr24 assets/bitmaps/audio-001/audio-001.bmp`
+5. Convert: `ffmpeg -i source.bmp -pix_fmt bgr24 assets/bitmaps/audio-view/audio-view.bmp`
 
 ### Step 10: Build and Test
 
@@ -334,4 +334,4 @@ When adding a new audio engine, you'll modify these files:
 - `src/audio.rs` (add import and factory case)
 - `src/coordinator.rs` (update NUM_DSP constant)
 - `src/screens.rs` (import NUM_DSP, update spritesheet calls)
-- `assets/bitmaps/audio-001/audio-001.bmp` (expand spritesheet)
+- `assets/bitmaps/audio-view/audio-view.bmp` (expand spritesheet)

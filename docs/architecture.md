@@ -87,12 +87,12 @@ av-synth/
 │   ├── midi.rs                    # MIDI input handling
 │   ├── i2c.rs                     # Custom hardware I2C interface (Linux only)
 │   ├── display.rs                 # OLED display output (Linux only)
-│   └── screens.rs                 # UI rendering logic
+│   ├── screens.rs                 # UI rendering logic
+│   └── shaders.rs                 # Shader discovery (folder scan + previews)
 ├── assets/
-│   ├── shaders/                   # GLSL fragment shaders for visuals
+│   ├── shaders/                   # GLSL fragment shaders (+ per-shader preview BMPs)
 │   ├── bitmaps/                   # UI graphics for OLED display
-│   ├── faust/                     # Faust DSP source files
-│   └── board/                     # Custom hardware designs
+│   └── faust/                     # Faust DSP source files
 └── Cargo.toml
 ```
 
@@ -110,6 +110,7 @@ av-synth/
 - [i2c.rs](src/i2c.rs) - Custom hardware (Pi only)
 - [display.rs](src/display.rs) - OLED output (Pi only)
 - [screens.rs](src/screens.rs) - UI screen rendering
+- [shaders.rs](src/shaders.rs) - Folder-driven shader discovery (`ShaderLibrary`, previews)
 
 ---
 
